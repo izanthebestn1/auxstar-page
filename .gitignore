@@ -1,0 +1,24 @@
+# Node deps
+node_modules/
+
+# VSCode settings
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Python envs
+venv/
+__pycache__/
+
+# build
+dist/
+
+# local env
+.env

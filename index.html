@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxstar Media - Home</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Ribbon Red -->
+    <header class="header-ribbon">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="15" fill="#E74C3C"/>
+                        <text x="50" y="65" font-size="70" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">p</text>
+                    </svg>
+                </div>
+                <span class="brand-name">Auxstar Media</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item active">Home</a>
+                <a href="articles.html" class="nav-item">Articles</a>
+                <a href="railroads.html" class="nav-item">Railroads</a>
+                <a href="evidence.html" class="nav-item">Evidence</a>
+                <a href="admin/login.html" class="nav-item" id="adminLink">Admin</a>
+            </nav>
+            <div class="user-section">
+                <span id="userDisplay"></span>
+                <button id="logoutBtn" style="display: none;" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Hero Section -->
+        <section id="home" class="hero">
+            <div class="hero-content">
+                <h1>Auxstar Media</h1>
+                <p>News, updates, and community content</p>
+                <div class="hero-buttons">
+                    <a href="articles.html" class="btn-hero">Browse Articles</a>
+                    <a href="railroads.html" class="btn-hero btn-secondary">Railroads</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Featured Articles -->
+        <section class="featured-section">
+            <h2>Featured Articles</h2>
+            <div id="featuredArticles" class="articles-grid">
+                <div class="empty-state">
+                    <p>📝 No articles yet</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent News -->
+        <section class="recent-section">
+            <h2>Latest News</h2>
+            <div id="recentArticles" class="articles-list">
+                <div class="empty-state">
+                    <p>📰 No news available</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about-section">
+            <h2>About Auxstar Media</h2>
+            <p>Welcome to Auxstar Media, your go-to source for news, updates, and community content. We provide accurate information through a dedicated community of contributors.</p>
+            <p>Submit evidence and contribute to our growing knowledge base. Only verified contributors can publish articles.</p>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Auxstar Media. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#">Privacy</a>
+                <a href="#">Terms</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/home.js"></script>
+</body>
+</html>

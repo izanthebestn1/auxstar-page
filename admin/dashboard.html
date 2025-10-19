@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxstar Admin - Dashboard</title>
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-page">
+    <!-- Admin Header -->
+    <header class="admin-header">
+        <div class="admin-header-content">
+            <div class="admin-logo-section">
+                <div class="logo-small">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="15" fill="#E74C3C"/>
+                        <text x="50" y="65" font-size="70" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">p</text>
+                    </svg>
+                </div>
+                <span>Auxstar Admin</span>
+            </div>
+            <div class="admin-user">
+                <span id="adminName"></span>
+                <button id="adminLogout" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Admin Content -->
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar">
+            <nav class="admin-nav">
+                <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                    <span class="icon">📊</span> Dashboard
+                </a>
+                <a href="#articles" class="nav-link" data-section="articles">
+                    <span class="icon">📝</span> Articles
+                </a>
+                <a href="#submit" class="nav-link" data-section="submit">
+                    <span class="icon">✍️</span> Submit Article
+                </a>
+                <a href="#evidence" class="nav-link" data-section="evidence">
+                    <span class="icon">📋</span> Evidence
+                </a>
+                <a href="#users" class="nav-link" data-section="users">
+                    <span class="icon">👥</span> Users
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Admin Content -->
+        <main class="admin-main">
+            <!-- Dashboard -->
+            <section id="dashboard" class="admin-section active">
+                <h1>Dashboard</h1>
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <h3>Total Articles</h3>
+                        <p class="big-number" id="totalArticles">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Pending Articles</h3>
+                        <p class="big-number" id="pendingArticles">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Evidence Submitted</h3>
+                        <p class="big-number" id="totalEvidence">0</p>
+                    </div>
+                    <div class="dashboard-card">
+                        <h3>Total Contributors</h3>
+                        <p class="big-number" id="totalContributors">0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Articles Management -->
+            <section id="articles" class="admin-section">
+                <h1>Manage Articles</h1>
+                <div class="filter-controls">
+                    <button class="filter-btn active" data-filter="all">All</button>
+                    <button class="filter-btn" data-filter="pending">Pending</button>
+                    <button class="filter-btn" data-filter="approved">Approved</button>
+                    <button class="filter-btn" data-filter="rejected">Rejected</button>
+                </div>
+                <div id="articlesList" class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Author</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="articlesTableBody">
+                            <tr><td colspan="6" class="empty">No articles</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Submit Article -->
+            <section id="submit" class="admin-section">
+                <h1>Submit New Article</h1>
+                <form id="submitArticleForm" class="upload-form">
+                    <div class="form-group">
+                        <label for="articleTitle">Article Title</label>
+                        <input type="text" id="articleTitle" name="articleTitle" required placeholder="Enter the title">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="articleCategory">Category</label>
+                        <select id="articleCategory" name="articleCategory" required>
+                            <option value="">Select a category</option>
+                            <option value="news">News</option>
+                            <option value="update">Update</option>
+                            <option value="railroads">Railroads</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleContent">Content</label>
+                        <textarea id="articleContent" name="articleContent" rows="8" required placeholder="Write the article content"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleImage">Article Image</label>
+                        <input type="file" id="articleImage" name="articleImage" accept="image/*">
+                        <div id="articleImagePreview" class="image-preview"></div>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Publish Article</button>
+                </form>
+            </section>
+
+            <!-- Evidence Management -->
+            <section id="evidence" class="admin-section">
+                <h1>Evidence Submissions</h1>
+                <div id="evidenceList" class="evidence-container">
+                    <div class="empty-state">
+                        <p>📋 No evidence submitted</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- User Management -->
+            <section id="users" class="admin-section">
+                <h1>Manage Contributors</h1>
+                <button class="btn-secondary" id="addUserBtn">Add New User</button>
+                <div id="usersList" class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <tr><td colspan="5" class="empty">No users</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="../js/auth.js"></script>
+    <script src="../js/dashboard.js"></script>
+</body>
+</html>
