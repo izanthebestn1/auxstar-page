@@ -55,7 +55,11 @@ export async function ensureSchema() {
                     content TEXT NOT NULL,
                     image_data TEXT,
                     author TEXT,
+                    summary TEXT,
+                    thumbnail_data TEXT,
+                    slug TEXT,
                     status TEXT NOT NULL DEFAULT 'pending',
+                    published_at TIMESTAMPTZ,
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
@@ -82,6 +86,68 @@ export async function ensureSchema() {
             await pool.query(`
                 ALTER TABLE evidence
                 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+            `);
+
+            await pool.query(`
+                ALTER TABLE articles
+                ADD COLUMN IF NOT EXISTS summary TEXT;
+            `);
+
+            await pool.query(`
+                ALTER TABLE articles
+                ADD COLUMN IF NOT EXISTS thumbnail_data TEXT;
+            `);
+
+            await pool.query(`
+                ALTER TABLE articles
+                ADD COLUMN IF NOT EXISTS slug TEXT;
+            `);
+
+            await pool.query(`
+                CREATE UNIQUE INDEX IF NOT EXISTS articles_slug_unique ON articles ((LOWER(slug))) WHERE slug IS NOT NULL;
+            `);
+
+            await pool.query(`
+                ALTER TABLE articles
+                ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+            `);
+
+            await pool.query(`
+                ALTER TABLE articles
+                ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS tags (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    name TEXT NOT NULL UNIQUE,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS article_tags (
+                    article_id UUID NOT NULL REFERENCES articles (id) ON DELETE CASCADE,
+                    tag_id UUID NOT NULL REFERENCES tags (id) ON DELETE CASCADE,
+                    PRIMARY KEY (article_id, tag_id)
+                );
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS article_media (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    article_id UUID NOT NULL REFERENCES articles (id) ON DELETE CASCADE,
+                    media_type TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    caption TEXT,
+                    sort_order INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS article_media_article_idx ON article_media (article_id);
             `);
         })()
             .catch((error) => {

@@ -15,11 +15,24 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function loadHomeArticles() {
-    const { articles } = await fetchArticles({ status: 'approved', limit: 12 });
-    const approved = (articles || []).filter((article) => article.status === 'approved');
+    const [approvedResponse, publishedResponse] = await Promise.all([
+        fetchArticles({ status: 'approved', limit: 12 }),
+        fetchArticles({ status: 'published', limit: 12 })
+    ]);
 
-    renderFeaturedArticles(approved.slice(0, 3));
-    renderRecentArticles(approved.slice(0, 5));
+    const merged = [...(approvedResponse.articles || []), ...(publishedResponse.articles || [])];
+    const unique = Array.from(new Map(merged.map((article) => [article.id, article])).values());
+
+    const publicArticles = unique
+        .filter((article) => ['approved', 'published'].includes((article.status || '').toLowerCase()))
+        .sort((a, b) => {
+            const aDate = new Date(a.publishedAt || a.updatedAt || a.createdAt || 0).getTime();
+            const bDate = new Date(b.publishedAt || b.updatedAt || b.createdAt || 0).getTime();
+            return bDate - aDate;
+        });
+
+    renderFeaturedArticles(publicArticles.slice(0, 3));
+    renderRecentArticles(publicArticles.slice(0, 5));
 }
 
 function renderFeaturedArticles(articles) {
@@ -37,10 +50,13 @@ function renderFeaturedArticles(articles) {
         const title = escapeHtml(article.title || 'Untitled');
         const category = article.category || 'news';
         const categoryLabel = escapeHtml(getCategoryLabel(category));
-        const excerpt = escapeHtml(truncateText(article.content || '', 100));
+        const summarySource = article.summary || article.content || '';
+        const excerpt = escapeHtml(truncateText(summarySource, 120));
         const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
-        const imageMarkup = buildArticleImageMarkup(article.image, title, category);
-        const url = `article.html?id=${encodeURIComponent(article.id)}`;
+        const imageMarkup = buildArticleImageMarkup(article, title, category);
+        const url = article.slug
+            ? `article.html?slug=${encodeURIComponent(article.slug)}`
+            : `article.html?id=${encodeURIComponent(article.id)}`;
 
         return `
             <a class="article-card" href="${url}">
@@ -71,10 +87,13 @@ function renderRecentArticles(articles) {
 
     container.innerHTML = articles.map((article) => {
         const title = escapeHtml(article.title || 'Untitled');
-        const excerpt = escapeHtml(truncateText(article.content || '', 80));
+        const summarySource = article.summary || article.content || '';
+        const excerpt = escapeHtml(truncateText(summarySource, 90));
         const author = escapeHtml(article.author || 'Auxstar');
         const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
-        const url = `article.html?id=${encodeURIComponent(article.id)}`;
+        const url = article.slug
+            ? `article.html?slug=${encodeURIComponent(article.slug)}`
+            : `article.html?id=${encodeURIComponent(article.id)}`;
 
         return `
             <a class="article-list-item" href="${url}">
@@ -88,12 +107,38 @@ function renderRecentArticles(articles) {
     }).join('');
 }
 
-function buildArticleImageMarkup(image, title, category) {
-    if (typeof image === 'string' && image.startsWith('data:image')) {
+function buildArticleImageMarkup(article, title, category) {
+    const image = resolveArticleImage(article);
+
+    if (image) {
         return `<div class="article-image"><img src="${image}" alt="${title}"></div>`;
     }
 
     return `<div class="article-image"><span>📰 ${escapeHtml(category.toUpperCase())}</span></div>`;
+}
+
+function resolveArticleImage(article) {
+    if (!article) {
+        return null;
+    }
+
+    const candidates = [];
+
+    if (typeof article.thumbnail === 'string') {
+        candidates.push(article.thumbnail);
+    }
+    if (typeof article.image === 'string') {
+        candidates.push(article.image);
+    }
+    if (Array.isArray(article.media)) {
+        for (const media of article.media) {
+            if (media && typeof media.data === 'string') {
+                candidates.push(media.data);
+            }
+        }
+    }
+
+    return candidates.find((value) => typeof value === 'string' && (value.startsWith('data:image') || /^https?:\/\//i.test(value))) || null;
 }
 
 function getCategoryLabel(category) {

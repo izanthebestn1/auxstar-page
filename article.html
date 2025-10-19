@@ -32,16 +32,23 @@
         </div>
     </header>
 
-    <main class="container">
+    <main class="container article-page">
+        <section id="articleHero" class="article-hero">
+            <div class="article-hero-placeholder">📰 Loading hero image...</div>
+        </section>
+
         <section class="page-header">
             <h1 id="articleTitle">Loading article...</h1>
             <p id="articleMeta"></p>
+            <div id="articleTags" class="article-tags"></div>
+            <p id="articleSummary" class="article-summary"></p>
         </section>
 
         <section class="article-detail">
             <div id="articleContent" class="article-body">
                 <div class="empty-state"><p>Fetching article content...</p></div>
             </div>
+            <div id="articleGallery" class="article-gallery"></div>
         </section>
     </main>
 

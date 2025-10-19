@@ -82,6 +82,9 @@
                     <button class="filter-btn active" data-filter="all">All</button>
                     <button class="filter-btn" data-filter="pending">Pending</button>
                     <button class="filter-btn" data-filter="approved">Approved</button>
+                    <button class="filter-btn" data-filter="published">Published</button>
+                    <button class="filter-btn" data-filter="scheduled">Scheduled</button>
+                    <button class="filter-btn" data-filter="draft">Draft</button>
                     <button class="filter-btn" data-filter="rejected">Rejected</button>
                 </div>
                 <div id="articlesList" class="admin-table-container">
@@ -92,12 +95,13 @@
                                 <th>Author</th>
                                 <th>Category</th>
                                 <th>Status</th>
+                                <th>Tags</th>
                                 <th>Date</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="articlesTableBody">
-                            <tr><td colspan="6" class="empty">No articles</td></tr>
+                            <tr><td colspan="7" class="empty">No articles</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -107,6 +111,15 @@
             <section id="submit" class="admin-section">
                 <h1>Submit New Article</h1>
                 <form id="submitArticleForm" class="upload-form">
+                    <div id="articleEditAlert" class="form-alert" style="display: none;">
+                        <span id="articleEditMessage"></span>
+                        <div class="form-alert-actions">
+                            <button type="button" class="btn-small" id="cancelArticleEdit">Cancel Edit</button>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="articleId">
+
                     <div class="form-group">
                         <label for="articleTitle">Article Title</label>
                         <input type="text" id="articleTitle" name="articleTitle" required placeholder="Enter the title">
@@ -123,17 +136,74 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="articleSummary">Summary</label>
+                        <textarea id="articleSummary" name="articleSummary" rows="4" placeholder="Short synopsis shown in lists"></textarea>
+                    </div>
+
+                    <div class="form-group">
                         <label for="articleContent">Content</label>
                         <textarea id="articleContent" name="articleContent" rows="8" required placeholder="Write the article content"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleThumbnail">Thumbnail Image</label>
+                        <input type="file" id="articleThumbnail" name="articleThumbnail" accept="image/*">
+                        <div id="articleThumbnailPreview" class="image-preview"></div>
+                        <label class="inline-control" style="display: none;">
+                            <input type="checkbox" id="articleThumbnailClear">
+                            <span>Remove existing thumbnail</span>
+                        </label>
                     </div>
 
                     <div class="form-group">
                         <label for="articleImage">Article Image</label>
                         <input type="file" id="articleImage" name="articleImage" accept="image/*">
                         <div id="articleImagePreview" class="image-preview"></div>
+                        <label class="inline-control" style="display: none;">
+                            <input type="checkbox" id="articleImageClear">
+                            <span>Remove existing feature image</span>
+                        </label>
                     </div>
 
-                    <button type="submit" class="btn-submit">Publish Article</button>
+                    <div class="form-group">
+                        <label for="articleGallery">Gallery Images</label>
+                        <input type="file" id="articleGallery" name="articleGallery" accept="image/*" multiple>
+                        <div id="articleExistingGallery" class="image-preview"></div>
+                        <div id="articleGalleryPreview" class="image-preview"></div>
+                        <button type="button" class="btn-small gallery-clear-btn" id="clearExistingGallery" style="display: none;">Remove all existing gallery images</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleTags">Tags</label>
+                        <input type="text" id="articleTags" name="articleTags" placeholder="Comma separated e.g. diesel,passenger">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="articleStatus">Status</label>
+                            <select id="articleStatus" name="articleStatus">
+                                <option value="pending">Pending</option>
+                                <option value="draft">Draft</option>
+                                <option value="approved">Approved</option>
+                                <option value="published">Published</option>
+                                <option value="scheduled">Scheduled</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="articlePublishedAt">Publish Date</label>
+                            <input type="datetime-local" id="articlePublishedAt" name="articlePublishedAt">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="articleSlug">Custom Slug</label>
+                        <input type="text" id="articleSlug" name="articleSlug" placeholder="Optional URL slug e.g. spring-update">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-submit">Save Article</button>
+                        <button type="button" class="btn-secondary" id="resetArticleForm">Clear Form</button>
+                    </div>
                 </form>
             </section>
 

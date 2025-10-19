@@ -515,12 +515,77 @@ section h1 {
    ARTICLE DETAIL
    ============================================ */
 
+.article-page {
+    max-width: 960px;
+}
+
+.article-hero {
+    width: 100%;
+    min-height: 240px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    margin: 32px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+}
+
+.article-hero.has-hero {
+    background: #000;
+}
+
+.article-hero-placeholder {
+    font-size: 20px;
+    color: var(--text-tertiary);
+    padding: 24px;
+    text-align: center;
+}
+
+.article-hero img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
 .article-detail {
     background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 40px;
     margin: 32px 0 60px;
+}
+
+.article-summary {
+    display: none;
+    margin: 18px auto 0;
+    max-width: 680px;
+    color: var(--text-secondary);
+    font-size: 17px;
+    line-height: 1.6;
+}
+
+.article-tags {
+    display: none;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
 }
 
 .article-body article {
@@ -582,6 +647,36 @@ section h1 {
     border-radius: 4px;
 }
 
+.article-gallery {
+    margin-top: 40px;
+    display: none;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+}
+
+.article-gallery figure {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 0 4px 14px rgba(57, 41, 26, 0.08);
+}
+
+.article-gallery img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.article-gallery figcaption {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+}
+
 /* ============================================
    FILTER & CONTROLS
    ============================================ */
@@ -636,8 +731,11 @@ section h1 {
     border: 1px dashed var(--border);
     border-radius: 8px;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
     background: #fff;
     color: var(--text-tertiary);
     font-size: 13px;
@@ -884,6 +982,20 @@ section h1 {
         padding: 6px 12px;
         font-size: 12px;
     }
+
+    .article-detail {
+        padding: 28px;
+        margin: 24px 0 48px;
+    }
+
+    .article-hero {
+        min-height: 180px;
+        margin: 24px 0;
+    }
+
+    .article-gallery {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 480px) {
@@ -903,6 +1015,14 @@ section h1 {
     .logo {
         width: 40px;
         height: 40px;
+    }
+
+    .article-detail {
+        padding: 20px;
+    }
+
+    .article-summary {
+        font-size: 16px;
     }
 
     .hero {

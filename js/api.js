@@ -186,3 +186,23 @@ async function fetchArticleById(id) {
         article: response.article || null
     };
 }
+
+async function fetchArticleBySlug(slug, { scope } = {}) {
+    if (!slug) {
+        throw new Error('Article slug is required.');
+    }
+
+    const params = new URLSearchParams({ slug });
+
+    if (scope) {
+        params.set('scope', scope);
+    }
+
+    const response = await apiRequest(`/api/articles?${params.toString()}`, {
+        auth: scope === 'admin'
+    });
+
+    return {
+        article: response.article || null
+    };
+}

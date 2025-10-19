@@ -2,6 +2,20 @@
 
 let articlesFilter = 'all';
 
+const MAX_MEDIA_FILE_SIZE = 6 * 1024 * 1024; // 6MB
+const articleFormState = {
+    mode: 'create',
+    editingId: null,
+    currentArticle: null,
+    existingMedia: [],
+    removedMediaIds: new Set(),
+    newMedia: [],
+    imageData: null,
+    thumbnailData: null,
+    imageChanged: false,
+    thumbnailChanged: false
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeDashboard().catch((error) => {
         console.error('Failed to initialize dashboard:', error);
@@ -18,6 +32,7 @@ async function initializeDashboard() {
     updateAdminDisplay();
     setupNavigation();
     setupArticlesFilter();
+    setupArticleFormControls();
     disableUserCreation();
 
     const logoutButton = document.getElementById('adminLogout');
@@ -136,15 +151,15 @@ async function loadArticlesManagement() {
         return;
     }
 
-    tbody.innerHTML = '<tr><td colspan="6" class="empty">Loading articles...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Loading articles...</td></tr>';
 
     try {
-    const statusParam = articlesFilter === 'all' ? undefined : articlesFilter;
-    const { articles } = await fetchArticles({ scope: 'admin', status: statusParam, limit: 100 });
+        const statusParam = articlesFilter === 'all' ? undefined : articlesFilter;
+        const { articles } = await fetchArticles({ scope: 'admin', status: statusParam, limit: 100 });
         renderArticlesTable(articles || []);
     } catch (error) {
         console.error('Failed to load articles:', error);
-        tbody.innerHTML = '<tr><td colspan="6" class="empty">Unable to load articles</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">Unable to load articles</td></tr>';
         showNotification(error.message || 'Failed to load articles.');
     }
 }
@@ -156,13 +171,35 @@ function renderArticlesTable(articles) {
     }
 
     if (!articles.length) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty">No articles found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">No articles found</td></tr>';
         return;
     }
 
     const rows = articles.map((article) => {
         const statusClass = `status-${(article.status || 'pending').replace(/[^a-z0-9_-]/gi, '')}`;
         const dateDisplay = formatDate(article.updatedAt || article.createdAt) || '';
+        const tags = Array.isArray(article.tags) && article.tags.length
+            ? article.tags.map((tag) => `<span class="tag-pill">${escapeHtml(tag)}</span>`).join(' ')
+            : '<span class="muted">—</span>';
+
+        const currentStatus = (article.status || '').toLowerCase();
+        const actions = [];
+
+        actions.push(`<button class="btn-small" data-article-action="edit" data-article-id="${escapeHtml(article.id)}">Edit</button>`);
+
+        if (currentStatus !== 'approved' && currentStatus !== 'published') {
+            actions.push(`<button class="btn-small btn-success" data-article-action="approve" data-article-id="${escapeHtml(article.id)}">Approve</button>`);
+        }
+
+        if (currentStatus !== 'published') {
+            actions.push(`<button class="btn-small btn-success" data-article-action="publish" data-article-id="${escapeHtml(article.id)}">Publish</button>`);
+        }
+
+        if (currentStatus !== 'draft') {
+            actions.push(`<button class="btn-small" data-article-action="draft" data-article-id="${escapeHtml(article.id)}">Mark Draft</button>`);
+        }
+
+    actions.push(`<button class="btn-small btn-danger" data-article-action="reject" data-article-id="${escapeHtml(article.id)}">Reject</button>`);
 
         return `
             <tr>
@@ -170,11 +207,9 @@ function renderArticlesTable(articles) {
                 <td>${escapeHtml(article.author || 'System')}</td>
                 <td>${escapeHtml(article.category || '')}</td>
                 <td><span class="${statusClass}">${escapeHtml(article.status || 'pending')}</span></td>
+                <td class="article-tags-cell">${tags}</td>
                 <td>${escapeHtml(dateDisplay)}</td>
-                <td class="actions">
-                    <button class="btn-small btn-success" data-article-action="approve" data-article-id="${escapeHtml(article.id)}">Approve</button>
-                    <button class="btn-small btn-danger" data-article-action="reject" data-article-id="${escapeHtml(article.id)}">Reject</button>
-                </td>
+                <td class="actions">${actions.join(' ')}</td>
             </tr>
         `;
     }).join('');
@@ -201,8 +236,10 @@ function bindArticleActions(tbody) {
         }
 
         try {
-            await handleArticleAction(articleId, action);
-            await Promise.all([loadArticlesManagement(), loadDashboardData()]);
+            const shouldRefresh = await handleArticleAction(articleId, action);
+            if (shouldRefresh) {
+                await Promise.all([loadArticlesManagement(), loadDashboardData()]);
+            }
         } catch (error) {
             console.error('Article action failed:', error);
             showNotification(error.message || 'Unable to update article.');
@@ -216,10 +253,25 @@ async function handleArticleAction(articleId, action) {
     if (action === 'approve') {
         await updateArticle(articleId, { status: 'approved' });
         showNotification('Article approved.');
+        return true;
+    } else if (action === 'publish') {
+        await updateArticle(articleId, { status: 'published' });
+        showNotification('Article published.');
+        return true;
+    } else if (action === 'draft') {
+        await updateArticle(articleId, { status: 'draft' });
+        showNotification('Article marked as draft.');
+        return true;
     } else if (action === 'reject') {
         await updateArticle(articleId, { status: 'rejected' });
         showNotification('Article rejected.');
+        return true;
+    } else if (action === 'edit') {
+        await enterArticleEditMode(articleId);
+        return false;
     }
+
+    return false;
 }
 
 async function handleArticleSubmit(event) {
@@ -229,8 +281,13 @@ async function handleArticleSubmit(event) {
     const title = document.getElementById('articleTitle').value.trim();
     const category = document.getElementById('articleCategory').value;
     const content = document.getElementById('articleContent').value.trim();
-    const imageInput = document.getElementById('articleImage');
-    const preview = document.getElementById('articleImagePreview');
+    const summaryInput = document.getElementById('articleSummary');
+    const summary = summaryInput && typeof summaryInput.value === 'string' ? summaryInput.value.trim() : '';
+    const tagsInputEl = document.getElementById('articleTags');
+    const tagsInput = tagsInputEl && typeof tagsInputEl.value === 'string' ? tagsInputEl.value : '';
+    const statusInput = document.getElementById('articleStatus');
+    const publishedAtInput = document.getElementById('articlePublishedAt');
+    const slugInput = document.getElementById('articleSlug');
     const submitButton = form.querySelector('button[type="submit"]');
 
     if (!title || !category || !content) {
@@ -241,30 +298,90 @@ async function handleArticleSubmit(event) {
     submitButton.disabled = true;
 
     try {
-        let imageData = null;
+        const tagList = tagsInput
+            .split(',')
+            .map((tag) => tag.trim())
+            .filter((tag) => tag.length > 0);
 
-        if (imageInput && imageInput.files && imageInput.files[0]) {
-            imageData = await readFileAsDataUrl(imageInput.files[0]);
+        const statusValue = statusInput && statusInput.value ? statusInput.value : 'pending';
+        const publishDateValue = publishedAtInput && publishedAtInput.value ? publishedAtInput.value : null;
+
+        if (statusValue === 'scheduled' && !publishDateValue) {
+            showNotification('Please set a publish date for scheduled articles.');
+            submitButton.disabled = false;
+            return;
         }
 
-        await createArticle({
+        const payload = {
             title,
             category,
             content,
-            image: imageData,
-            status: 'approved'
-        });
+            summary: summary || null,
+            tags: tagList,
+            status: statusValue,
+            publishedAt: publishDateValue
+        };
 
-        form.reset();
-        if (preview) {
-            preview.innerHTML = '';
+        if (articleFormState.mode === 'create' || articleFormState.imageChanged) {
+            payload.image = articleFormState.imageData;
         }
 
-        showNotification('Article published successfully.');
+        if (articleFormState.mode === 'create' || articleFormState.thumbnailChanged) {
+            payload.thumbnail = articleFormState.thumbnailData;
+        }
+
+        const retainedExisting = articleFormState.existingMedia
+            .filter((item) => item && !articleFormState.removedMediaIds.has(item.id))
+            .map((item, index) => ({
+                type: item.type || item.media_type || 'image',
+                data: item.data,
+                caption: item.caption || null,
+                sortOrder: index
+            }));
+
+        const newMedia = articleFormState.newMedia.map((item, index) => ({
+            type: item.type || 'image',
+            data: item.data,
+            caption: item.caption || null,
+            sortOrder: retainedExisting.length + index
+        }));
+
+        if (articleFormState.mode === 'edit') {
+            payload.media = [...retainedExisting, ...newMedia];
+        } else if (newMedia.length) {
+            payload.media = newMedia;
+        }
+
+        if (slugInput) {
+            const slugValue = slugInput.value.trim();
+            if (slugValue || (articleFormState.mode === 'edit' && slugInput.dataset.original && slugValue === '')) {
+                payload.slug = slugValue;
+            }
+        }
+
+        let statusMessage = 'Article submitted.';
+
+        if (articleFormState.mode === 'edit') {
+            await updateArticle(articleFormState.editingId, payload);
+            statusMessage = 'Article updated.';
+            exitArticleEditMode({ silent: true });
+        } else {
+            await createArticle(payload);
+            statusMessage = statusValue === 'draft'
+                ? 'Article saved as draft.'
+                : statusValue === 'scheduled'
+                    ? 'Article scheduled for publication.'
+                    : statusValue === 'published'
+                        ? 'Article published.'
+                        : 'Article submitted.';
+            resetArticleForm();
+        }
+
+        showNotification(statusMessage);
         await Promise.all([loadArticlesManagement(), loadDashboardData()]);
     } catch (error) {
         console.error('Failed to submit article:', error);
-        showNotification(error.message || 'Failed to publish article.');
+        showNotification(error.message || 'Failed to save article.');
     } finally {
         submitButton.disabled = false;
     }
@@ -279,6 +396,598 @@ function readFileAsDataUrl(file) {
 
         reader.readAsDataURL(file);
     });
+}
+
+function setupArticleFormControls() {
+    const imagePreview = getPreviewContainer('image');
+    const thumbnailPreview = getPreviewContainer('thumbnail');
+    const existingGallery = document.getElementById('articleExistingGallery');
+    const newGallery = document.getElementById('articleGalleryPreview');
+
+    setPreviewEmpty(imagePreview, 'No feature image selected.');
+    setPreviewEmpty(thumbnailPreview, 'No thumbnail selected.');
+    setPreviewEmpty(existingGallery, 'No existing gallery images.');
+    setPreviewEmpty(newGallery, 'No new gallery files.');
+
+    const imageInput = document.getElementById('articleImage');
+    if (imageInput) {
+        imageInput.addEventListener('change', () => handleSingleImageSelection('image'));
+    }
+
+    const thumbnailInput = document.getElementById('articleThumbnail');
+    if (thumbnailInput) {
+        thumbnailInput.addEventListener('change', () => handleSingleImageSelection('thumbnail'));
+    }
+
+    const galleryInput = document.getElementById('articleGallery');
+    if (galleryInput) {
+        galleryInput.addEventListener('change', async () => {
+            await handleGallerySelection(galleryInput);
+        });
+    }
+
+    const imageClear = document.getElementById('articleImageClear');
+    if (imageClear) {
+        imageClear.addEventListener('change', () => handleImageClear('image'));
+    }
+
+    const thumbnailClear = document.getElementById('articleThumbnailClear');
+    if (thumbnailClear) {
+        thumbnailClear.addEventListener('change', () => handleImageClear('thumbnail'));
+    }
+
+    const cancelEditBtn = document.getElementById('cancelArticleEdit');
+    if (cancelEditBtn) {
+        cancelEditBtn.addEventListener('click', () => exitArticleEditMode());
+    }
+
+    const clearFormBtn = document.getElementById('resetArticleForm');
+    if (clearFormBtn) {
+        clearFormBtn.addEventListener('click', () => {
+            if (articleFormState.mode === 'edit') {
+                exitArticleEditMode();
+            } else {
+                resetArticleForm();
+                showNotification('Form cleared.');
+            }
+        });
+    }
+
+    const clearExistingGalleryBtn = document.getElementById('clearExistingGallery');
+    if (clearExistingGalleryBtn) {
+        clearExistingGalleryBtn.addEventListener('click', () => {
+            articleFormState.existingMedia.forEach((item) => {
+                if (item && item.id) {
+                    articleFormState.removedMediaIds.add(item.id);
+                }
+            });
+            refreshGalleryPreview();
+        });
+    }
+
+    updateFormModeUI();
+    refreshGalleryPreview();
+}
+
+async function enterArticleEditMode(articleId) {
+    try {
+        const { article } = await fetchArticleById(articleId);
+        if (!article) {
+            showNotification('Article not found.');
+            return;
+        }
+
+        articleFormState.mode = 'edit';
+        articleFormState.editingId = article.id;
+        articleFormState.currentArticle = article;
+        articleFormState.existingMedia = Array.isArray(article.media)
+            ? article.media.map((item) => ({ ...item }))
+            : [];
+        articleFormState.removedMediaIds = new Set();
+        articleFormState.newMedia = [];
+        articleFormState.imageData = null;
+        articleFormState.thumbnailData = null;
+        articleFormState.imageChanged = false;
+        articleFormState.thumbnailChanged = false;
+
+        applyArticleToForm(article);
+        updateFormModeUI(article);
+        refreshGalleryPreview();
+        restoreExistingSinglePreview('image');
+        restoreExistingSinglePreview('thumbnail');
+
+        showNotification('Article loaded for editing.');
+    } catch (error) {
+        console.error('Failed to load article for editing:', error);
+        showNotification('Unable to load article for editing.');
+    }
+}
+
+function exitArticleEditMode(options = {}) {
+    resetArticleForm();
+    if (!options.silent) {
+        showNotification('Edit cancelled. Form reset.');
+    }
+}
+
+function resetArticleForm() {
+    resetArticleStateForCreate();
+
+    const form = document.getElementById('submitArticleForm');
+    if (form) {
+        form.reset();
+    }
+
+    const slugInput = document.getElementById('articleSlug');
+    if (slugInput) {
+        delete slugInput.dataset.original;
+    }
+
+    const galleryInput = document.getElementById('articleGallery');
+    if (galleryInput) {
+        galleryInput.value = '';
+    }
+
+    updateFormModeUI();
+    setPreviewEmpty(getPreviewContainer('image'), 'No feature image selected.');
+    setPreviewEmpty(getPreviewContainer('thumbnail'), 'No thumbnail selected.');
+    setPreviewEmpty(document.getElementById('articleExistingGallery'), 'No existing gallery images.');
+    setPreviewEmpty(document.getElementById('articleGalleryPreview'), 'No new gallery files.');
+}
+
+function resetArticleStateForCreate() {
+    articleFormState.mode = 'create';
+    articleFormState.editingId = null;
+    articleFormState.currentArticle = null;
+    articleFormState.existingMedia = [];
+    articleFormState.removedMediaIds = new Set();
+    articleFormState.newMedia = [];
+    articleFormState.imageData = null;
+    articleFormState.thumbnailData = null;
+    articleFormState.imageChanged = true;
+    articleFormState.thumbnailChanged = true;
+}
+
+function applyArticleToForm(article) {
+    const idInput = document.getElementById('articleId');
+    if (idInput) {
+        idInput.value = article.id;
+    }
+
+    const titleEl = document.getElementById('articleTitle');
+    if (titleEl) {
+        titleEl.value = article.title || '';
+    }
+
+    const categoryEl = document.getElementById('articleCategory');
+    if (categoryEl) {
+        categoryEl.value = article.category || '';
+    }
+
+    const contentEl = document.getElementById('articleContent');
+    if (contentEl) {
+        contentEl.value = article.content || '';
+    }
+
+    const summaryEl = document.getElementById('articleSummary');
+    if (summaryEl) {
+        summaryEl.value = article.summary || '';
+    }
+
+    const tagsEl = document.getElementById('articleTags');
+    if (tagsEl) {
+        tagsEl.value = Array.isArray(article.tags) ? article.tags.join(', ') : '';
+    }
+
+    const statusEl = document.getElementById('articleStatus');
+    if (statusEl) {
+        statusEl.value = article.status || 'pending';
+    }
+
+    const publishedEl = document.getElementById('articlePublishedAt');
+    if (publishedEl) {
+        publishedEl.value = article.publishedAt ? formatDateTimeLocal(article.publishedAt) : '';
+    }
+
+    const slugEl = document.getElementById('articleSlug');
+    if (slugEl) {
+        slugEl.value = article.slug || '';
+        slugEl.dataset.original = article.slug || '';
+    }
+
+    const imageInput = document.getElementById('articleImage');
+    if (imageInput) {
+        imageInput.value = '';
+    }
+
+    const thumbnailInput = document.getElementById('articleThumbnail');
+    if (thumbnailInput) {
+        thumbnailInput.value = '';
+    }
+
+    const galleryInput = document.getElementById('articleGallery');
+    if (galleryInput) {
+        galleryInput.value = '';
+    }
+}
+
+function updateFormModeUI(article = articleFormState.currentArticle) {
+    const alert = document.getElementById('articleEditAlert');
+    const message = document.getElementById('articleEditMessage');
+
+    if (articleFormState.mode === 'edit') {
+        if (alert) {
+            alert.style.display = 'flex';
+        }
+        if (message) {
+            const label = article?.title ? `"${article.title}"` : 'selected article';
+            message.textContent = `Editing ${label}`;
+        }
+    } else {
+        if (alert) {
+            alert.style.display = 'none';
+        }
+        if (message) {
+            message.textContent = '';
+        }
+    }
+
+    const showImageClear = articleFormState.mode === 'edit' && !!(article?.image);
+    const showThumbnailClear = articleFormState.mode === 'edit' && !!(article?.thumbnail);
+
+    toggleInlineControl('articleImageClear', showImageClear);
+    toggleInlineControl('articleThumbnailClear', showThumbnailClear);
+}
+
+async function handleSingleImageSelection(type) {
+    const input = document.getElementById(type === 'image' ? 'articleImage' : 'articleThumbnail');
+    const preview = getPreviewContainer(type);
+    const clearControl = document.getElementById(type === 'image' ? 'articleImageClear' : 'articleThumbnailClear');
+
+    if (!input || !preview) {
+        return;
+    }
+
+    if (!input.files || !input.files.length) {
+        if (articleFormState.mode === 'create') {
+            if (type === 'image') {
+                articleFormState.imageData = null;
+                articleFormState.imageChanged = true;
+            } else {
+                articleFormState.thumbnailData = null;
+                articleFormState.thumbnailChanged = true;
+            }
+            setPreviewEmpty(preview, getPreviewPlaceholder(type));
+        } else {
+            if (type === 'image') {
+                articleFormState.imageData = null;
+                articleFormState.imageChanged = false;
+            } else {
+                articleFormState.thumbnailData = null;
+                articleFormState.thumbnailChanged = false;
+            }
+            restoreExistingSinglePreview(type);
+        }
+        return;
+    }
+
+    const file = input.files[0];
+    if (!validateFileSize(file)) {
+        input.value = '';
+        return;
+    }
+
+    const data = await readFileAsDataUrl(file);
+    if (type === 'image') {
+        articleFormState.imageData = data;
+        articleFormState.imageChanged = true;
+    } else {
+        articleFormState.thumbnailData = data;
+        articleFormState.thumbnailChanged = true;
+    }
+
+    refreshSinglePreview(type, data, {
+        allowRemove: true,
+        label: file.name
+    });
+
+    if (clearControl) {
+        clearControl.checked = false;
+    }
+}
+
+function handleRemoveSinglePreview(type) {
+    const input = document.getElementById(type === 'image' ? 'articleImage' : 'articleThumbnail');
+    if (input) {
+        input.value = '';
+    }
+
+    if (type === 'image') {
+        articleFormState.imageData = null;
+    } else {
+        articleFormState.thumbnailData = null;
+    }
+
+    if (articleFormState.mode === 'edit') {
+        if (type === 'image') {
+            articleFormState.imageChanged = false;
+        } else {
+            articleFormState.thumbnailChanged = false;
+        }
+        restoreExistingSinglePreview(type);
+    } else {
+        if (type === 'image') {
+            articleFormState.imageChanged = true;
+        } else {
+            articleFormState.thumbnailChanged = true;
+        }
+        setPreviewEmpty(getPreviewContainer(type), getPreviewPlaceholder(type));
+    }
+}
+
+function handleImageClear(type) {
+    const control = document.getElementById(type === 'image' ? 'articleImageClear' : 'articleThumbnailClear');
+    const preview = getPreviewContainer(type);
+    const input = document.getElementById(type === 'image' ? 'articleImage' : 'articleThumbnail');
+
+    if (!control || !preview) {
+        return;
+    }
+
+    if (control.checked) {
+        if (input) {
+            input.value = '';
+        }
+        if (type === 'image') {
+            articleFormState.imageData = null;
+            articleFormState.imageChanged = true;
+        } else {
+            articleFormState.thumbnailData = null;
+            articleFormState.thumbnailChanged = true;
+        }
+
+        const message = type === 'image'
+            ? 'Feature image will be removed on save.'
+            : 'Thumbnail will be removed on save.';
+        setPreviewEmpty(preview, message);
+    } else {
+        if (articleFormState.mode === 'edit') {
+            restoreExistingSinglePreview(type);
+            if (type === 'image') {
+                articleFormState.imageChanged = false;
+            } else {
+                articleFormState.thumbnailChanged = false;
+            }
+        } else {
+            setPreviewEmpty(preview, getPreviewPlaceholder(type));
+        }
+    }
+}
+
+async function handleGallerySelection(input) {
+    if (!input || !input.files || !input.files.length) {
+        return;
+    }
+
+    const files = Array.from(input.files);
+    for (const file of files) {
+        if (!validateFileSize(file)) {
+            continue;
+        }
+
+        const data = await readFileAsDataUrl(file);
+        articleFormState.newMedia.push({
+            tempId: generateTempId(),
+            type: 'image',
+            data,
+            caption: null
+        });
+    }
+
+    input.value = '';
+    refreshGalleryPreview();
+}
+
+function refreshGalleryPreview() {
+    const existingContainer = document.getElementById('articleExistingGallery');
+    const newContainer = document.getElementById('articleGalleryPreview');
+
+    const remainingExisting = articleFormState.existingMedia.filter((item) => item && !articleFormState.removedMediaIds.has(item.id));
+
+    if (existingContainer) {
+        existingContainer.innerHTML = '';
+        if (!remainingExisting.length) {
+            setPreviewEmpty(existingContainer, 'No existing gallery images.');
+        } else {
+            existingContainer.classList.remove('empty');
+            remainingExisting.forEach((item) => {
+                existingContainer.appendChild(buildGalleryThumb(item, { existing: true }));
+            });
+        }
+    }
+
+    if (newContainer) {
+        newContainer.innerHTML = '';
+        if (!articleFormState.newMedia.length) {
+            setPreviewEmpty(newContainer, 'No new gallery files.');
+        } else {
+            newContainer.classList.remove('empty');
+            articleFormState.newMedia.forEach((item) => {
+                newContainer.appendChild(buildGalleryThumb(item, { existing: false }));
+            });
+        }
+    }
+
+    const clearBtn = document.getElementById('clearExistingGallery');
+    if (clearBtn) {
+        clearBtn.style.display = remainingExisting.length ? 'inline-flex' : 'none';
+    }
+}
+
+function buildGalleryThumb(item, { existing }) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'gallery-thumb';
+
+    const img = document.createElement('img');
+    img.src = item.data;
+    img.alt = item.caption || 'Gallery media';
+    wrapper.appendChild(img);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.className = 'preview-remove';
+    removeBtn.textContent = '×';
+    removeBtn.setAttribute('aria-label', 'Remove');
+    removeBtn.addEventListener('click', () => {
+        if (existing) {
+            removeExistingGalleryItem(item.id);
+        } else {
+            removeNewGalleryItem(item.tempId);
+        }
+    });
+    wrapper.appendChild(removeBtn);
+
+    if (item.caption) {
+        const meta = document.createElement('div');
+        meta.className = 'preview-meta';
+        meta.textContent = item.caption;
+        wrapper.appendChild(meta);
+    }
+
+    return wrapper;
+}
+
+function removeExistingGalleryItem(id) {
+    if (!id) {
+        return;
+    }
+    articleFormState.removedMediaIds.add(id);
+    refreshGalleryPreview();
+}
+
+function removeNewGalleryItem(tempId) {
+    articleFormState.newMedia = articleFormState.newMedia.filter((item) => item.tempId !== tempId);
+    refreshGalleryPreview();
+}
+
+function refreshSinglePreview(type, data, options = {}) {
+    const container = getPreviewContainer(type);
+    if (!container) {
+        return;
+    }
+
+    if (!data) {
+        setPreviewEmpty(container, options.emptyLabel || getPreviewPlaceholder(type));
+        return;
+    }
+
+    container.innerHTML = '';
+    container.classList.remove('empty');
+
+    const thumb = document.createElement('div');
+    thumb.className = 'preview-thumb';
+
+    const img = document.createElement('img');
+    img.src = data;
+    img.alt = options.label || `${type} preview`;
+    thumb.appendChild(img);
+
+    if (options.allowRemove) {
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'preview-remove';
+        removeBtn.textContent = '×';
+        removeBtn.setAttribute('aria-label', 'Remove');
+        removeBtn.addEventListener('click', () => handleRemoveSinglePreview(type));
+        thumb.appendChild(removeBtn);
+    }
+
+    container.appendChild(thumb);
+}
+
+function restoreExistingSinglePreview(type) {
+    const article = articleFormState.currentArticle;
+    const data = article ? (type === 'image' ? article.image : article.thumbnail) : null;
+    if (data) {
+        refreshSinglePreview(type, data, { allowRemove: false });
+    } else {
+        setPreviewEmpty(getPreviewContainer(type), getPreviewPlaceholder(type));
+    }
+}
+
+function setPreviewEmpty(container, message) {
+    if (!container) {
+        return;
+    }
+    container.innerHTML = '';
+    container.dataset.empty = message;
+    container.classList.add('empty');
+}
+
+function getPreviewContainer(type) {
+    if (type === 'image') {
+        return document.getElementById('articleImagePreview');
+    }
+    if (type === 'thumbnail') {
+        return document.getElementById('articleThumbnailPreview');
+    }
+    return null;
+}
+
+function getPreviewPlaceholder(type) {
+    return type === 'image' ? 'No feature image selected.' : 'No thumbnail selected.';
+}
+
+function toggleInlineControl(controlId, visible) {
+    const control = document.getElementById(controlId);
+    if (!control) {
+        return;
+    }
+
+    const wrapper = control.closest('.inline-control');
+    if (wrapper) {
+        wrapper.style.display = visible ? 'inline-flex' : 'none';
+    }
+
+    control.disabled = !visible;
+    if (!visible) {
+        control.checked = false;
+    }
+}
+
+function validateFileSize(file) {
+    if (!file) {
+        return false;
+    }
+
+    if (file.size > MAX_MEDIA_FILE_SIZE) {
+        const limitMb = Math.round(MAX_MEDIA_FILE_SIZE / 1024 / 1024);
+        showNotification(`"${file.name}" exceeds the ${limitMb}MB limit.`);
+        return false;
+    }
+
+    return true;
+}
+
+function formatDateTimeLocal(value) {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '';
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+function generateTempId() {
+    if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+        return window.crypto.randomUUID();
+    }
+    return `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
 async function loadEvidenceManagement() {

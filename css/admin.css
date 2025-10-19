@@ -295,6 +295,36 @@
     border: 1px solid rgba(140, 63, 47, 0.45);
 }
 
+.status-published {
+    background: rgba(79, 125, 91, 0.18);
+    color: var(--success);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(79, 125, 91, 0.45);
+}
+
+.status-scheduled {
+    background: rgba(78, 99, 118, 0.16);
+    color: var(--info);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(78, 99, 118, 0.4);
+}
+
+.status-draft {
+    background: rgba(184, 133, 48, 0.12);
+    color: var(--text-secondary);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid rgba(184, 133, 48, 0.3);
+}
+
 .status-active {
     background: rgba(79, 125, 91, 0.18);
     color: var(--success);
@@ -313,6 +343,21 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
+}
+
+.btn-small:not(.btn-success):not(.btn-danger) {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+.btn-small:not(.btn-success):not(.btn-danger):hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.gallery-clear-btn {
+    margin-top: 10px;
 }
 
 .btn-success {
@@ -549,6 +594,149 @@
     color: #F2E4D0;
     border-color: var(--primary);
     box-shadow: 0 4px 15px rgba(123, 107, 67, 0.3);
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.form-row .form-group {
+    flex: 1 1 240px;
+}
+
+.tag-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    margin: 2px;
+    border-radius: 16px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-light);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.article-tags-cell {
+    max-width: 220px;
+}
+
+.file-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    margin: 4px 4px 0 0;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.muted {
+    color: var(--text-tertiary);
+    font-size: 12px;
+}
+
+.form-alert {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 12px 16px;
+    border: 1px solid var(--warning);
+    background: rgba(184, 133, 48, 0.15);
+    color: var(--warning);
+    border-radius: 6px;
+    margin-bottom: 18px;
+}
+
+.form-alert-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.inline-control {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.inline-control input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.image-preview {
+    min-height: 48px;
+    padding: 12px;
+}
+
+.image-preview::before {
+    content: attr(data-empty);
+    color: var(--text-tertiary);
+    font-size: 13px;
+    display: none;
+}
+
+.image-preview.empty::before {
+    display: block;
+}
+
+.preview-thumb,
+.gallery-thumb {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: #fff;
+}
+
+.preview-thumb img,
+.gallery-thumb img {
+    display: block;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+}
+
+.gallery-thumb {
+    width: 120px;
+}
+
+.preview-remove {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(62, 42, 27, 0.85);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-meta {
+    padding: 6px 8px 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
 }
 
 /* Responsive */
