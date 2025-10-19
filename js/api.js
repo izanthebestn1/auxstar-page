@@ -175,3 +175,14 @@ async function fetchAdminUsers() {
         users: Array.isArray(response.users) ? response.users : []
     };
 }
+
+async function fetchArticleById(id) {
+    if (!id) {
+        throw new Error('Article id is required.');
+    }
+
+    const response = await apiRequest(`/api/articles/${encodeURIComponent(id)}`);
+    return {
+        article: response.article || null
+    };
+}

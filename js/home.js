@@ -38,11 +38,12 @@ function renderFeaturedArticles(articles) {
         const category = article.category || 'news';
         const categoryLabel = escapeHtml(getCategoryLabel(category));
         const excerpt = escapeHtml(truncateText(article.content || '', 100));
-    const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
+        const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
         const imageMarkup = buildArticleImageMarkup(article.image, title, category);
+        const url = `article.html?id=${encodeURIComponent(article.id)}`;
 
         return `
-            <div class="article-card">
+            <a class="article-card" href="${url}">
                 ${imageMarkup}
                 <div class="article-content">
                     <span class="article-category">${categoryLabel}</span>
@@ -52,7 +53,7 @@ function renderFeaturedArticles(articles) {
                         <strong>${dateDisplay}</strong>
                     </div>
                 </div>
-            </div>
+            </a>
         `;
     }).join('');
 }
@@ -72,16 +73,17 @@ function renderRecentArticles(articles) {
         const title = escapeHtml(article.title || 'Untitled');
         const excerpt = escapeHtml(truncateText(article.content || '', 80));
         const author = escapeHtml(article.author || 'Auxstar');
-    const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
+        const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
+        const url = `article.html?id=${encodeURIComponent(article.id)}`;
 
         return `
-            <div class="article-list-item">
+            <a class="article-list-item" href="${url}">
                 <div class="item-content">
                     <h4>${title}</h4>
                     <p>${excerpt}</p>
                     <small>${dateDisplay} • ${author}</small>
                 </div>
-            </div>
+            </a>
         `;
     }).join('');
 }

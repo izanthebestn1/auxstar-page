@@ -41,8 +41,10 @@ function renderRailroadCard(article) {
     const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
     const imageMarkup = buildRailroadImageMarkup(article.image, title);
 
+    const url = `article.html?id=${encodeURIComponent(article.id)}`;
+
     return `
-        <div class="railroads-card">
+        <a class="railroads-card" href="${url}">
             ${imageMarkup}
             <div class="railroads-content">
                 <h3 class="railroads-title">${title}</h3>
@@ -51,7 +53,7 @@ function renderRailroadCard(article) {
                     <strong>${dateDisplay}</strong> by ${author}
                 </div>
             </div>
-        </div>
+        </a>
     `;
 }
 

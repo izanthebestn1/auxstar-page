@@ -58,9 +58,10 @@ function renderArticleCard(article) {
     const author = escapeHtml(article.author || 'Auxstar');
     const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
     const imageMarkup = getArticleImageMarkup(article.image, title, category);
+    const url = `article.html?id=${encodeURIComponent(article.id)}`;
 
     return `
-        <div class="article-card">
+        <a class="article-card" href="${url}">
             ${imageMarkup}
             <div class="article-content">
                 <span class="article-category">${categoryLabel}</span>
@@ -70,7 +71,7 @@ function renderArticleCard(article) {
                     <strong>${dateDisplay}</strong> by ${author}
                 </div>
             </div>
-        </div>
+        </a>
     `;
 }
 
