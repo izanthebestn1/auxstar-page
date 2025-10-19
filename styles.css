@@ -1,29 +1,29 @@
 /* ============================================
-   Auxstar Media - Simple Warm Theme
-   Inspired by the admin login styling
+   Auxstar Media - Earthy Heritage Theme
+   Palette reference: 352208, E1BB80, 7B6B43, 685634, 806443
    ============================================ */
 
 :root {
-    --primary: #BF4342;
-    --primary-dark: #8C1C13;
-    --primary-light: #D86D6B;
+    --primary: #7B6B43;
+    --primary-dark: #352208;
+    --primary-light: #806443;
 
-    --bg-main: #E7D7C1;
-    --bg-secondary: #F3E6D6;
-    --bg-card: #F9F1E7;
-    --bg-contrast: #735751;
+    --bg-main: #E1BB80;
+    --bg-secondary: #F2D9A5;
+    --bg-card: #F7E4BC;
+    --bg-contrast: #685634;
 
-    --text-primary: #2F1F1C;
-    --text-secondary: #5A3F38;
-    --text-tertiary: #A78A7F;
+    --text-primary: #352208;
+    --text-secondary: #685634;
+    --text-tertiary: #806443;
 
-    --border: #D8C6B8;
-    --border-light: #C2AA9B;
+    --border: #D4BA84;
+    --border-light: #C3A86F;
 
-    --success: #3E8E41;
-    --warning: #CC8F25;
-    --danger: #C75049;
-    --info: #3E6C8C;
+    --success: #4F7D5B;
+    --warning: #B88530;
+    --danger: #8C3F2F;
+    --info: #4E6376;
 }
 
 /* ============================================
@@ -36,12 +36,23 @@
     box-sizing: border-box;
 }
 
+html {
+    height: 100%;
+}
+
 body {
     font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
     line-height: 1.6;
     background-color: var(--bg-main);
     color: var(--text-primary);
     min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1 0 auto;
+    width: 100%;
 }
 
 a {
@@ -88,7 +99,7 @@ img {
     height: 48px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: #ffffff;
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -293,7 +304,7 @@ section h1 {
 .form-group select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 0 2px rgba(191, 67, 66, 0.2);
+    box-shadow: 0 0 0 2px rgba(123, 107, 67, 0.25);
     background-color: #fff;
 }
 
@@ -365,7 +376,7 @@ section h1 {
 .article-image,
 .railroads-image {
     height: 160px;
-    background: rgba(191, 67, 66, 0.1);
+    background: rgba(123, 107, 67, 0.12);
     border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
@@ -392,13 +403,13 @@ section h1 {
 
 .article-category {
     align-self: flex-start;
-    background: rgba(191, 67, 66, 0.12);
+    background: rgba(123, 107, 67, 0.14);
     color: var(--primary-dark);
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
-    border: 1px solid rgba(191, 67, 66, 0.25);
+    border: 1px solid rgba(123, 107, 67, 0.3);
 }
 
 .article-title,
@@ -614,13 +625,13 @@ section h1 {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: rgba(204, 143, 37, 0.15);
+    background: rgba(184, 133, 48, 0.18);
     color: var(--warning);
     padding: 4px 10px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
-    border: 1px solid var(--warning);
+    border: 1px solid rgba(184, 133, 48, 0.45);
 }
 
 /* ============================================
@@ -629,7 +640,7 @@ section h1 {
 
 .footer {
     background: var(--bg-contrast);
-    color: #f8f1ec;
+    color: #F8E6BD;
     text-align: center;
     padding: 30px 20px;
     margin-top: 60px;
@@ -649,7 +660,7 @@ section h1 {
 }
 
 .footer-links a {
-    color: #f8f1ec;
+    color: #F8E6BD;
     font-size: 13px;
 }
 
@@ -702,23 +713,23 @@ section h1 {
 }
 
 .notification-success {
-    border-color: rgba(62, 142, 65, 0.4);
-    background: rgba(62, 142, 65, 0.1);
+    border-color: rgba(79, 125, 91, 0.45);
+    background: rgba(79, 125, 91, 0.12);
 }
 
 .notification-error {
-    border-color: rgba(199, 80, 73, 0.4);
-    background: rgba(199, 80, 73, 0.1);
+    border-color: rgba(140, 63, 47, 0.45);
+    background: rgba(140, 63, 47, 0.12);
 }
 
 .notification-info {
-    border-color: rgba(62, 108, 140, 0.4);
-    background: rgba(62, 108, 140, 0.1);
+    border-color: rgba(78, 99, 118, 0.45);
+    background: rgba(78, 99, 118, 0.12);
 }
 
 .notification-warning {
-    border-color: rgba(204, 143, 37, 0.4);
-    background: rgba(204, 143, 37, 0.1);
+    border-color: rgba(184, 133, 48, 0.45);
+    background: rgba(184, 133, 48, 0.12);
 }
 
 /* ============================================

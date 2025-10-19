@@ -9,11 +9,7 @@ function initializeStorage() {
         localStorage.setItem('auxstarEvidence', JSON.stringify([]));
     }
     if (!localStorage.getItem('auxstarUsers')) {
-        const defaultUsers = [
-            { username: 'admin', password: 'admin123', role: 'admin', joined: '2025-01-01' },
-            { username: 'editor1', password: 'editor123', role: 'editor', joined: '2025-01-15' }
-        ];
-        localStorage.setItem('auxstarUsers', JSON.stringify(defaultUsers));
+        localStorage.setItem('auxstarUsers', JSON.stringify([]));
     }
 }
 

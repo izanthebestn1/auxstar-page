@@ -1,65 +1,83 @@
 // Authentication and User Management
 
-// Default users (in a real app, this would be in a database)
-const DEFAULT_USERS = [
-    { username: 'admin', password: 'admin123', role: 'admin', joined: '2025-01-01' },
-    { username: 'editor1', password: 'editor123', role: 'editor', joined: '2025-01-15' },
-    { username: 'editor2', password: 'editor123', role: 'editor', joined: '2025-01-20' }
-];
-
-// Initialize users in localStorage
-function initializeUsers() {
+function ensureUserStore() {
     if (!localStorage.getItem('auxstarUsers')) {
-        localStorage.setItem('auxstarUsers', JSON.stringify(DEFAULT_USERS));
+        localStorage.setItem('auxstarUsers', JSON.stringify([]));
     }
 }
 
-// Get current logged-in user
 function getCurrentUser() {
     const userStr = sessionStorage.getItem('auxstarUser');
     return userStr ? JSON.parse(userStr) : null;
 }
 
-// Set logged-in user
 function setCurrentUser(user) {
     sessionStorage.setItem('auxstarUser', JSON.stringify(user));
 }
 
-// Clear logged-in user
 function clearCurrentUser() {
     sessionStorage.removeItem('auxstarUser');
 }
 
-// Login user
-function loginUser(username, password) {
-    const users = JSON.parse(localStorage.getItem('auxstarUsers')) || DEFAULT_USERS;
-    const user = users.find(u => u.username === username && u.password === password);
-    
-    if (user) {
-        setCurrentUser({ username: user.username, role: user.role });
-        return true;
+async function loginUser(username, password) {
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username, password })
+        });
+
+        const payload = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+            return {
+                success: false,
+                message: payload.message || 'Invalid credentials. Please try again.'
+            };
+        }
+
+        if (!payload.username || !payload.role) {
+            return {
+                success: false,
+                message: 'Login response is missing required fields.'
+            };
+        }
+
+        setCurrentUser({
+            username: payload.username,
+            role: payload.role,
+            token: payload.token || null
+        });
+
+        return {
+            success: true,
+            user: payload
+        };
+    } catch (error) {
+        console.error('Login error:', error);
+        return {
+            success: false,
+            message: 'Login service unavailable right now. Please try again in a moment.'
+        };
     }
-    return false;
 }
 
-// Check if user is authenticated
 function isAuthenticated() {
     return getCurrentUser() !== null;
 }
 
-// Check if user is admin
 function isAdmin() {
     const user = getCurrentUser();
     return user && user.role === 'admin';
 }
 
-// Check if user is editor
 function isEditor() {
     const user = getCurrentUser();
     return user && (user.role === 'editor' || user.role === 'admin');
 }
 
-// Update user display
 function updateUserDisplay() {
     const userDisplay = document.getElementById('userDisplay');
     const logoutBtn = document.getElementById('logoutBtn');
@@ -75,7 +93,7 @@ function updateUserDisplay() {
             logoutBtn.addEventListener('click', () => {
                 clearCurrentUser();
                 window.location.href = 'index.html';
-            });
+            }, { once: true });
         }
         if (adminLink && !isAdmin()) {
             adminLink.style.display = 'none';
@@ -90,6 +108,5 @@ function updateUserDisplay() {
     }
 }
 
-// Initialize auth system
-initializeUsers();
+ensureUserStore();
 updateUserDisplay();

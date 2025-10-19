@@ -1,2 +1,1 @@
-Auxstar web page
-:)
+# Auxstar Web Page :)

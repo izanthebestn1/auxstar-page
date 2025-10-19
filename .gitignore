@@ -22,6 +22,7 @@ dist/
 
 # local env
 .env
+.vercel/
 
 # repo housekeeping
 README.md.old
