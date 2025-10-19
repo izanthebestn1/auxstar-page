@@ -22,3 +22,6 @@ dist/
 
 # local env
 .env
+
+# repo housekeeping
+README.md.old
