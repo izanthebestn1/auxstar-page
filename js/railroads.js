@@ -1,30 +1,64 @@
 // Railroads Page Script
 
 document.addEventListener('DOMContentLoaded', () => {
-    loadRailroads();
+    loadRailroads().catch((error) => {
+        console.error('Failed to load railroads content:', error);
+        const container = document.getElementById('railroadsList');
+        if (container) {
+            container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>🚂 No Railroads content available</p></div>';
+        }
+    });
 });
 
-function loadRailroads() {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    const railroads = articles.filter(a => a.category === 'railroads' && a.status === 'approved');
-    
+async function loadRailroads() {
     const container = document.getElementById('railroadsList');
-    
-    if (railroads.length === 0) {
-        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>🚂 No Railroads content available</p></div>';
+    if (!container) {
         return;
     }
-    
-    container.innerHTML = railroads.map(article => `
+
+    container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>Loading railroads content...</p></div>';
+
+    try {
+        const { articles } = await fetchArticles({ status: 'approved' });
+        const railroads = (articles || []).filter((article) => article.status === 'approved' && article.category === 'railroads');
+
+        if (!railroads.length) {
+            container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>🚂 No Railroads content available</p></div>';
+            return;
+        }
+
+        container.innerHTML = railroads.map((article) => renderRailroadCard(article)).join('');
+    } catch (error) {
+        console.error('Failed to fetch railroads articles:', error);
+        container.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;"><p>🚂 No Railroads content available</p></div>';
+    }
+}
+
+function renderRailroadCard(article) {
+    const title = escapeHtml(article.title || 'Untitled');
+    const excerpt = escapeHtml(truncateText(article.content || '', 100));
+    const author = escapeHtml(article.author || 'Auxstar');
+    const dateDisplay = escapeHtml(formatDate(article.updatedAt || article.createdAt) || '');
+    const imageMarkup = buildRailroadImageMarkup(article.image, title);
+
+    return `
         <div class="railroads-card">
-            ${article.image ? `<div class="railroads-image"><img src="${article.image}" alt="${article.title}"></div>` : `<div class="railroads-image"><span>🚂 RAILROADS</span></div>`}
+            ${imageMarkup}
             <div class="railroads-content">
-                <h3 class="railroads-title">${article.title}</h3>
-                <p class="railroads-excerpt">${article.content.substring(0, 100)}...</p>
+                <h3 class="railroads-title">${title}</h3>
+                <p class="railroads-excerpt">${excerpt}</p>
                 <div class="article-meta">
-                    <strong>${article.date}</strong> by ${article.author || 'Auxstar'}
+                    <strong>${dateDisplay}</strong> by ${author}
                 </div>
             </div>
         </div>
-    `).join('');
+    `;
+}
+
+function buildRailroadImageMarkup(image, title) {
+    if (typeof image === 'string' && image.startsWith('data:image')) {
+        return `<div class="railroads-image"><img src="${image}" alt="${title}"></div>`;
+    }
+
+    return '<div class="railroads-image"><span>🚂 RAILROADS</span></div>';
 }

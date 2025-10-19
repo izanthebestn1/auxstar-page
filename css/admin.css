@@ -1,29 +1,29 @@
 /* ============================================
-   AUXSTAR MEDIA - ADMIN EARTHY THEME
-   Palette reference: 352208, E1BB80, 7B6B43, 685634, 806443
+   AUXSTAR MEDIA - ADMIN SOFT UMBER THEME
+   Palette reference: 3E2A1B, D8CBB2, 6F5B3C, 5B4A33, 8E7754
    ============================================ */
 
 :root {
-    --primary: #7B6B43;
-    --primary-dark: #352208;
-    --primary-light: #806443;
+    --primary: #6F5B3C;
+    --primary-dark: #3E2A1B;
+    --primary-light: #8E7754;
 
-    --bg-main: #E1BB80;
-    --bg-secondary: #F3D9A6;
-    --bg-card: #F8E6BD;
-    --bg-hover: #E3C789;
-    --bg-darker: #C29C54;
+    --bg-main: #D8CBB2;
+    --bg-secondary: #E6D8C0;
+    --bg-card: #F2E4D0;
+    --bg-hover: #E0D2B7;
+    --bg-darker: #C0AA82;
 
-    --text-primary: #352208;
-    --text-secondary: #685634;
-    --text-tertiary: #806443;
+    --text-primary: #332618;
+    --text-secondary: #5A4A36;
+    --text-tertiary: #8C7A5E;
 
-    --border: #D4BA84;
-    --border-light: #C3A86F;
+    --border: #CBB896;
+    --border-light: #BCA883;
 
     --success: #4F7D5B;
     --warning: #B88530;
-    --danger: #8C3F2F;
+    --danger: #814235;
     --info: #4E6376;
 }
 
@@ -38,7 +38,7 @@
 /* Admin Header */
 .admin-header {
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
-    color: #F8E6BD;
+    color: #F2E4D0;
     padding: 15px 20px;
     box-shadow: 0 8px 32px rgba(53, 34, 8, 0.25);
     border-bottom: 1px solid rgba(53, 34, 8, 0.35);
@@ -83,13 +83,13 @@
 }
 
 .admin-header .btn-logout {
-    color: #F8E6BD;
-    border-color: rgba(248, 230, 189, 0.7);
+    color: #F2E4D0;
+    border-color: rgba(242, 228, 208, 0.7);
 }
 
 .admin-header .btn-logout:hover {
-    background: rgba(248, 230, 189, 0.18);
-    color: #F8E6BD;
+    background: rgba(242, 228, 208, 0.18);
+    color: #F2E4D0;
 }
 
 /* Admin Container */
@@ -317,7 +317,7 @@
 
 .btn-success {
     background: linear-gradient(135deg, var(--success), #3E6E4C);
-    color: #F8E6BD;
+    color: #F2E4D0;
 }
 
 .btn-success:hover {
@@ -546,7 +546,7 @@
 
 .filter-btn.active {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-    color: #F8E6BD;
+    color: #F2E4D0;
     border-color: var(--primary);
     box-shadow: 0 4px 15px rgba(123, 107, 67, 0.3);
 }

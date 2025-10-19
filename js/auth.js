@@ -1,11 +1,5 @@
 // Authentication and User Management
 
-function ensureUserStore() {
-    if (!localStorage.getItem('auxstarUsers')) {
-        localStorage.setItem('auxstarUsers', JSON.stringify([]));
-    }
-}
-
 function getCurrentUser() {
     const userStr = sessionStorage.getItem('auxstarUser');
     return userStr ? JSON.parse(userStr) : null;
@@ -17,6 +11,30 @@ function setCurrentUser(user) {
 
 function clearCurrentUser() {
     sessionStorage.removeItem('auxstarUser');
+}
+
+async function logoutUser({ redirect = false } = {}) {
+    const user = getCurrentUser();
+
+    try {
+        if (user && user.token) {
+            await fetch('/api/logout', {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${user.token}`
+                }
+            }).catch((error) => {
+                console.error('Logout request failed:', error);
+            });
+        }
+    } finally {
+        clearCurrentUser();
+
+        if (redirect) {
+            const isAdminSection = window.location.pathname.includes('/admin/');
+            window.location.href = isAdminSection ? 'login.html' : 'admin/login.html';
+        }
+    }
 }
 
 async function loginUser(username, password) {
@@ -90,10 +108,10 @@ function updateUserDisplay() {
         }
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
-            logoutBtn.addEventListener('click', () => {
-                clearCurrentUser();
+            logoutBtn.onclick = async () => {
+                await logoutUser({ redirect: false });
                 window.location.href = 'index.html';
-            }, { once: true });
+            };
         }
         if (adminLink && !isAdmin()) {
             adminLink.style.display = 'none';
@@ -108,5 +126,4 @@ function updateUserDisplay() {
     }
 }
 
-ensureUserStore();
 updateUserDisplay();

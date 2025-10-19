@@ -1,234 +1,440 @@
 // Dashboard Script
 
+let articlesFilter = 'all';
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Check if user is admin
-    if (!isAdmin()) {
-        window.location.href = 'login.html';
-        return;
-    }
-    
-    updateAdminDisplay();
-    setupNavigation();
-    loadDashboardData();
-    
-    // Setup form submissions
-    document.getElementById('submitArticleForm').addEventListener('submit', handleArticleSubmit);
-    document.getElementById('adminLogout').addEventListener('click', () => {
-        clearCurrentUser();
-        window.location.href = 'login.html';
+    initializeDashboard().catch((error) => {
+        console.error('Failed to initialize dashboard:', error);
+        showNotification('Could not load admin dashboard.');
     });
 });
 
+async function initializeDashboard() {
+    if (!isAdmin()) {
+        await logoutUser({ redirect: true });
+        return;
+    }
+
+    updateAdminDisplay();
+    setupNavigation();
+    setupArticlesFilter();
+    disableUserCreation();
+
+    const logoutButton = document.getElementById('adminLogout');
+    if (logoutButton) {
+        logoutButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            await logoutUser({ redirect: true });
+        });
+    }
+
+    const articleForm = document.getElementById('submitArticleForm');
+    if (articleForm) {
+        articleForm.addEventListener('submit', handleArticleSubmit);
+    }
+
+    await loadDashboardData();
+}
+
 function updateAdminDisplay() {
     const user = getCurrentUser();
-    document.getElementById('adminName').textContent = user.username;
+    const nameEl = document.getElementById('adminName');
+
+    if (user && nameEl) {
+        nameEl.textContent = user.username;
+    }
 }
 
 function setupNavigation() {
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
+    document.querySelectorAll('.nav-link').forEach((link) => {
+        link.addEventListener('click', async (event) => {
+            event.preventDefault();
+
             const section = link.dataset.section;
-            
-            // Update active link
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if (!section) {
+                return;
+            }
+
+            document.querySelectorAll('.nav-link').forEach((item) => item.classList.remove('active'));
             link.classList.add('active');
-            
-            // Update active section
-            document.querySelectorAll('.admin-section').forEach(s => s.classList.remove('active'));
-            document.getElementById(section).classList.add('active');
-            
-            // Load section-specific content
-            if (section === 'articles') {
-                loadArticlesManagement();
-            } else if (section === 'evidence') {
-                loadEvidenceManagement();
-            } else if (section === 'users') {
-                loadUsersManagement();
+
+            document.querySelectorAll('.admin-section').forEach((panel) => panel.classList.remove('active'));
+            const target = document.getElementById(section);
+            if (target) {
+                target.classList.add('active');
+            }
+
+            try {
+                if (section === 'articles') {
+                    await loadArticlesManagement();
+                } else if (section === 'evidence') {
+                    await loadEvidenceManagement();
+                } else if (section === 'users') {
+                    await loadUsersManagement();
+                } else if (section === 'dashboard') {
+                    await loadDashboardData();
+                }
+            } catch (error) {
+                console.error(`Failed to load ${section} section:`, error);
+                showNotification('Unable to load the requested section.');
             }
         });
     });
 }
 
-function loadDashboardData() {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    const evidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
-    const users = JSON.parse(localStorage.getItem('auxstarUsers')) || [];
-    
-    document.getElementById('totalArticles').textContent = articles.length;
-    document.getElementById('pendingArticles').textContent = articles.filter(a => a.status === 'pending').length;
-    document.getElementById('totalEvidence').textContent = evidence.length;
-    document.getElementById('totalContributors').textContent = users.filter(u => u.role === 'editor').length;
-}
-
-function loadArticlesManagement() {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    const tbody = document.getElementById('articlesTableBody');
-    
-    if (articles.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" class="empty">No articles</td></tr>';
+function setupArticlesFilter() {
+    const filterButtons = document.querySelectorAll('#articles .filter-btn');
+    if (!filterButtons.length) {
         return;
     }
-    
-    tbody.innerHTML = articles.map(article => `
-        <tr>
-            <td>${article.title}</td>
-            <td>${article.author || 'System'}</td>
-            <td>${article.category}</td>
-            <td><span class="status-${article.status}">${article.status}</span></td>
-            <td>${article.date}</td>
-            <td class="actions">
-                <button onclick="approveArticle(${article.id})" class="btn-small btn-success">Approve</button>
-                <button onclick="rejectArticle(${article.id})" class="btn-small btn-danger">Reject</button>
-            </td>
-        </tr>
-    `).join('');
+
+    filterButtons.forEach((button) => {
+        button.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            const selected = button.dataset.filter || 'all';
+            if (articlesFilter === selected) {
+                return;
+            }
+
+            articlesFilter = selected;
+            filterButtons.forEach((btn) => btn.classList.remove('active'));
+            button.classList.add('active');
+
+            try {
+                await loadArticlesManagement();
+            } catch (error) {
+                console.error('Failed to apply article filter:', error);
+            }
+        });
+    });
 }
 
-function loadEvidenceManagement() {
-    const evidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
+function disableUserCreation() {
+    const addUserBtn = document.getElementById('addUserBtn');
+    if (addUserBtn) {
+        addUserBtn.style.display = 'none';
+    }
+}
+
+async function loadDashboardData() {
+    try {
+        const stats = await fetchAdminStats();
+        document.getElementById('totalArticles').textContent = stats.totalArticles || 0;
+        document.getElementById('pendingArticles').textContent = stats.pendingArticles || 0;
+        document.getElementById('totalEvidence').textContent = stats.totalEvidence || 0;
+        document.getElementById('totalContributors').textContent = stats.totalContributors || 0;
+    } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+        showNotification('Failed to load dashboard stats.');
+    }
+}
+
+async function loadArticlesManagement() {
+    const tbody = document.getElementById('articlesTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="6" class="empty">Loading articles...</td></tr>';
+
+    try {
+    const statusParam = articlesFilter === 'all' ? undefined : articlesFilter;
+    const { articles } = await fetchArticles({ scope: 'admin', status: statusParam, limit: 100 });
+        renderArticlesTable(articles || []);
+    } catch (error) {
+        console.error('Failed to load articles:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">Unable to load articles</td></tr>';
+        showNotification(error.message || 'Failed to load articles.');
+    }
+}
+
+function renderArticlesTable(articles) {
+    const tbody = document.getElementById('articlesTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    if (!articles.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="empty">No articles found</td></tr>';
+        return;
+    }
+
+    const rows = articles.map((article) => {
+        const statusClass = `status-${(article.status || 'pending').replace(/[^a-z0-9_-]/gi, '')}`;
+        const dateDisplay = formatDate(article.updatedAt || article.createdAt) || '';
+
+        return `
+            <tr>
+                <td>${escapeHtml(article.title || '')}</td>
+                <td>${escapeHtml(article.author || 'System')}</td>
+                <td>${escapeHtml(article.category || '')}</td>
+                <td><span class="${statusClass}">${escapeHtml(article.status || 'pending')}</span></td>
+                <td>${escapeHtml(dateDisplay)}</td>
+                <td class="actions">
+                    <button class="btn-small btn-success" data-article-action="approve" data-article-id="${escapeHtml(article.id)}">Approve</button>
+                    <button class="btn-small btn-danger" data-article-action="reject" data-article-id="${escapeHtml(article.id)}">Reject</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = rows;
+    bindArticleActions(tbody);
+}
+
+function bindArticleActions(tbody) {
+    if (tbody.dataset.bound === 'true') {
+        return;
+    }
+
+    tbody.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-article-action]');
+        if (!button) {
+            return;
+        }
+
+        const articleId = button.getAttribute('data-article-id');
+        const action = button.getAttribute('data-article-action');
+        if (!articleId || !action) {
+            return;
+        }
+
+        try {
+            await handleArticleAction(articleId, action);
+            await Promise.all([loadArticlesManagement(), loadDashboardData()]);
+        } catch (error) {
+            console.error('Article action failed:', error);
+            showNotification(error.message || 'Unable to update article.');
+        }
+    });
+
+    tbody.dataset.bound = 'true';
+}
+
+async function handleArticleAction(articleId, action) {
+    if (action === 'approve') {
+        await updateArticle(articleId, { status: 'approved' });
+        showNotification('Article approved.');
+    } else if (action === 'reject') {
+        await updateArticle(articleId, { status: 'rejected' });
+        showNotification('Article rejected.');
+    }
+}
+
+async function handleArticleSubmit(event) {
+    event.preventDefault();
+
+    const form = event.target;
+    const title = document.getElementById('articleTitle').value.trim();
+    const category = document.getElementById('articleCategory').value;
+    const content = document.getElementById('articleContent').value.trim();
+    const imageInput = document.getElementById('articleImage');
+    const preview = document.getElementById('articleImagePreview');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (!title || !category || !content) {
+        showNotification('Please complete all required fields.');
+        return;
+    }
+
+    submitButton.disabled = true;
+
+    try {
+        let imageData = null;
+
+        if (imageInput && imageInput.files && imageInput.files[0]) {
+            imageData = await readFileAsDataUrl(imageInput.files[0]);
+        }
+
+        await createArticle({
+            title,
+            category,
+            content,
+            image: imageData,
+            status: 'approved'
+        });
+
+        form.reset();
+        if (preview) {
+            preview.innerHTML = '';
+        }
+
+        showNotification('Article published successfully.');
+        await Promise.all([loadArticlesManagement(), loadDashboardData()]);
+    } catch (error) {
+        console.error('Failed to submit article:', error);
+        showNotification(error.message || 'Failed to publish article.');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+function readFileAsDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error('Failed to read the selected file.'));
+
+        reader.readAsDataURL(file);
+    });
+}
+
+async function loadEvidenceManagement() {
     const container = document.getElementById('evidenceList');
-    
-    if (evidence.length === 0) {
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '<div class="empty-state"><p>Loading evidence...</p></div>';
+
+    try {
+        const { evidence } = await fetchEvidence({ scope: 'admin' });
+        renderEvidenceList(evidence || []);
+    } catch (error) {
+        console.error('Failed to load evidence:', error);
+        container.innerHTML = '<div class="empty-state"><p>Unable to load evidence submissions</p></div>';
+        showNotification(error.message || 'Failed to load evidence.');
+    }
+}
+
+function renderEvidenceList(items) {
+    const container = document.getElementById('evidenceList');
+    if (!container) {
+        return;
+    }
+
+    const activeItems = items.filter((item) => item.status !== 'deleted');
+    if (!activeItems.length) {
         container.innerHTML = '<div class="empty-state"><p>📋 No evidence submitted</p></div>';
         return;
     }
-    
-    container.innerHTML = evidence.map(item => `
-        <div class="evidence-card admin-evidence">
-            <h3>${item.title}</h3>
-            <p>${item.description}</p>
-            <div class="evidence-meta">
-                <span><strong>From:</strong> ${item.name} (${item.email})</span>
-                <span><strong>Date:</strong> ${item.date}</span>
+
+    container.innerHTML = activeItems.map((item) => {
+        const submittedBy = item.name ? escapeHtml(item.name) : 'Anonymous';
+        const emailLabel = item.email ? ` (${escapeHtml(item.email)})` : '';
+        const description = truncateText(item.description || '', 160);
+        const dateDisplay = formatDate(item.updatedAt || item.createdAt) || '';
+        const statusClass = `status-${(item.status || 'submitted').replace(/[^a-z0-9_-]/gi, '')}`;
+
+        return `
+            <div class="evidence-card admin-evidence" data-evidence-id="${escapeHtml(item.id)}">
+                <h3>${escapeHtml(item.title || '')}</h3>
+                <p>${escapeHtml(description)}</p>
+                <div class="evidence-meta">
+                    <span><strong>From:</strong> ${submittedBy}${emailLabel}</span>
+                    <span><strong>Date:</strong> ${escapeHtml(dateDisplay)}</span>
+                    <span class="${statusClass}">${escapeHtml(item.status || 'submitted')}</span>
+                </div>
+                <div class="evidence-actions">
+                    <button class="btn-small btn-success" data-evidence-action="status" data-status="reviewed" data-evidence-id="${escapeHtml(item.id)}">Mark Reviewed</button>
+                    <button class="btn-small btn-danger" data-evidence-action="delete" data-evidence-id="${escapeHtml(item.id)}">Delete</button>
+                </div>
             </div>
-            <div class="evidence-actions">
-                <button onclick="reviewEvidence(${item.id}, 'reviewed')" class="btn-small btn-success">Mark Reviewed</button>
-                <button onclick="deleteEvidence(${item.id})" class="btn-small btn-danger">Delete</button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
+
+    bindEvidenceActions(container);
 }
 
-function loadUsersManagement() {
-    const users = JSON.parse(localStorage.getItem('auxstarUsers')) || [];
-    const tbody = document.getElementById('usersTableBody');
-    
-    if (users.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="empty">No users</td></tr>';
+function bindEvidenceActions(container) {
+    if (container.dataset.bound === 'true') {
         return;
     }
-    
-    tbody.innerHTML = users.map(user => `
-        <tr>
-            <td>${user.username}</td>
-            <td>${user.role}</td>
-            <td><span class="status-active">Active</span></td>
-            <td>${user.joined}</td>
-            <td class="actions">
-                <button onclick="deleteUser('${user.username}')" class="btn-small btn-danger">Delete</button>
-            </td>
-        </tr>
-    `).join('');
+
+    container.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-evidence-action]');
+        if (!button) {
+            return;
+        }
+
+        const evidenceId = button.getAttribute('data-evidence-id');
+        const action = button.getAttribute('data-evidence-action');
+
+        if (!evidenceId || !action) {
+            return;
+        }
+
+        try {
+            if (action === 'delete') {
+                const confirmed = window.confirm('Delete this evidence?');
+                if (!confirmed) {
+                    return;
+                }
+                await handleEvidenceAction(evidenceId, action);
+                showNotification('Evidence deleted.');
+            } else if (action === 'status') {
+                const status = button.getAttribute('data-status') || 'reviewed';
+                await handleEvidenceAction(evidenceId, action, status);
+                showNotification('Evidence status updated.');
+            }
+
+            await Promise.all([loadEvidenceManagement(), loadDashboardData()]);
+        } catch (error) {
+            console.error('Evidence action failed:', error);
+            showNotification(error.message || 'Unable to update evidence.');
+        }
+    });
+
+    container.dataset.bound = 'true';
 }
 
-function handleArticleSubmit(e) {
-    e.preventDefault();
-    
-    const title = document.getElementById('articleTitle').value;
-    const category = document.getElementById('articleCategory').value;
-    const content = document.getElementById('articleContent').value;
-    const imageInput = document.getElementById('articleImage');
-    const user = getCurrentUser();
-    
-    const article = {
-        id: Date.now(),
-        title,
-        category,
-        content,
-        image: null,
-        author: user.username,
-        date: new Date().toLocaleDateString('en-US'),
-        status: 'approved' // Admin articles are auto-approved
-    };
-    
-    if (imageInput.files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            article.image = event.target.result;
-            saveArticle(article);
-        };
-        reader.readAsDataURL(imageInput.files[0]);
-    } else {
-        saveArticle(article);
+async function handleEvidenceAction(evidenceId, action, status) {
+    if (action === 'delete') {
+        await deleteEvidenceItem(evidenceId);
+    } else if (action === 'status') {
+        await updateEvidence(evidenceId, { status });
     }
 }
 
-function saveArticle(article) {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    articles.unshift(article);
-    localStorage.setItem('auxstarArticles', JSON.stringify(articles));
-    
-    document.getElementById('submitArticleForm').reset();
-    document.getElementById('articleImagePreview').innerHTML = '';
-    
-    showNotification('Article published successfully!');
-    loadDashboardData();
-}
+async function loadUsersManagement() {
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) {
+        return;
+    }
 
-function approveArticle(id) {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    const article = articles.find(a => a.id === id);
-    if (article) {
-        article.status = 'approved';
-        localStorage.setItem('auxstarArticles', JSON.stringify(articles));
-        loadArticlesManagement();
-        loadDashboardData();
-        showNotification('Article approved!');
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading users...</td></tr>';
+
+    try {
+        const { users } = await fetchAdminUsers();
+        renderUsersTable(users || []);
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">Unable to load users</td></tr>';
+        showNotification(error.message || 'Failed to load users.');
     }
 }
 
-function rejectArticle(id) {
-    const articles = JSON.parse(localStorage.getItem('auxstarArticles')) || [];
-    const article = articles.find(a => a.id === id);
-    if (article) {
-        article.status = 'rejected';
-        localStorage.setItem('auxstarArticles', JSON.stringify(articles));
-        loadArticlesManagement();
-        loadDashboardData();
-        showNotification('Article rejected');
+function renderUsersTable(users) {
+    const tbody = document.getElementById('usersTableBody');
+    if (!tbody) {
+        return;
     }
-}
 
-function deleteEvidence(id) {
-    if (confirm('Delete this evidence?')) {
-        const evidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
-        const filtered = evidence.filter(e => e.id !== id);
-        localStorage.setItem('auxstarEvidence', JSON.stringify(filtered));
-        loadEvidenceManagement();
-        showNotification('Evidence deleted');
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No users found</td></tr>';
+        return;
     }
-}
 
-function reviewEvidence(id, status) {
-    const evidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
-    const item = evidence.find(e => e.id === id);
-    if (item) {
-        item.status = status;
-        localStorage.setItem('auxstarEvidence', JSON.stringify(evidence));
-        loadEvidenceManagement();
-        showNotification('Evidence status updated');
-    }
-}
+    const rows = users.map((user) => {
+        const roleValue = user.role || 'editor';
+        const roleLabel = escapeHtml(roleValue);
+        const joined = formatDate(user.joinedAt) || '';
+        const statusLabel = roleValue.toLowerCase() === 'admin' ? 'Admin' : 'Active';
 
-function deleteUser(username) {
-    if (confirm(`Delete user ${username}?`)) {
-        const users = JSON.parse(localStorage.getItem('auxstarUsers')) || [];
-        const filtered = users.filter(u => u.username !== username);
-        localStorage.setItem('auxstarUsers', JSON.stringify(filtered));
-        loadUsersManagement();
-        showNotification('User deleted');
-    }
+        return `
+            <tr>
+                <td>${escapeHtml(user.username || '')}</td>
+                <td>${roleLabel}</td>
+                <td><span class="status-active">${escapeHtml(statusLabel)}</span></td>
+                <td>${escapeHtml(joined)}</td>
+                <td class="actions">Managed by platform administrators</td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = rows;
 }
 
 function showNotification(message) {
@@ -238,17 +444,17 @@ function showNotification(message) {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #7B6B43;
-        color: #F7E4BC;
+        background: #6F5B3C;
+        color: #F2E4D0;
         padding: 15px 25px;
         border-radius: 6px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         z-index: 2000;
         animation: slideIn 0.3s ease;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);

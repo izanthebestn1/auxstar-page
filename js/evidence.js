@@ -1,60 +1,100 @@
 // Evidence Page Script
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('evidenceForm').addEventListener('submit', handleEvidenceSubmit);
-    loadEvidence();
+    const form = document.getElementById('evidenceForm');
+    if (form) {
+        form.addEventListener('submit', handleEvidenceSubmit);
+    }
+
+    loadEvidence().catch((error) => {
+        console.error('Failed to load evidence:', error);
+        const container = document.getElementById('evidenceList');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><p>📋 No evidence submitted yet</p></div>';
+        }
+    });
 });
 
-function handleEvidenceSubmit(e) {
-    e.preventDefault();
-    
-    const title = document.getElementById('evidenceTitle').value;
-    const description = document.getElementById('evidenceDescription').value;
-    const name = document.getElementById('name').value || 'Anonymous';
-    const email = document.getElementById('email').value || '';
-    
-    const evidence = {
-        id: Date.now(),
-        title,
-        description,
-        name,
-        email,
-        date: new Date().toLocaleDateString('en-US'),
-        status: 'submitted'
-    };
-    
-    // Get existing evidence
-    const allEvidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
-    allEvidence.unshift(evidence);
-    localStorage.setItem('auxstarEvidence', JSON.stringify(allEvidence));
-    
-    document.getElementById('evidenceForm').reset();
-    document.getElementById('filePreview').innerHTML = '';
-    
-    showNotification('Evidence submitted successfully!');
-    loadEvidence();
-}
+async function handleEvidenceSubmit(event) {
+    event.preventDefault();
 
-function loadEvidence() {
-    const evidence = JSON.parse(localStorage.getItem('auxstarEvidence')) || [];
-    const container = document.getElementById('evidenceList');
-    
-    if (evidence.length === 0) {
-        container.innerHTML = '<div class="empty-state"><p>📋 No evidence submitted yet</p></div>';
+    const form = event.target;
+    const title = document.getElementById('evidenceTitle').value.trim();
+    const description = document.getElementById('evidenceDescription').value.trim();
+    const nameValue = document.getElementById('name').value.trim();
+    const emailValue = document.getElementById('email').value.trim();
+    const preview = document.getElementById('filePreview');
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    if (!title || !description) {
+        showNotification('Title and description are required.');
         return;
     }
-    
-    container.innerHTML = evidence.map(item => `
-        <div class="evidence-card">
-            <h3>${item.title}</h3>
-            <p>${item.description.substring(0, 150)}...</p>
-            <div class="evidence-meta">
-                <span><strong>Submitted by:</strong> ${item.name}</span>
-                <span><strong>Date:</strong> ${item.date}</span>
-                <span class="status-badge">${item.status}</span>
-            </div>
-        </div>
-    `).join('');
+
+    submitButton.disabled = true;
+
+    try {
+        await submitEvidence({
+            title,
+            description,
+            name: nameValue || null,
+            email: emailValue || null
+        });
+
+        form.reset();
+        if (preview) {
+            preview.innerHTML = '';
+        }
+
+        showNotification('Evidence submitted successfully!');
+        await loadEvidence();
+    } catch (error) {
+        console.error('Evidence submission failed:', error);
+        showNotification(error.message || 'Failed to submit evidence.');
+    } finally {
+        submitButton.disabled = false;
+    }
+}
+
+async function loadEvidence() {
+    const container = document.getElementById('evidenceList');
+    if (!container) {
+        return;
+    }
+
+    container.innerHTML = '<div class="empty-state"><p>Loading evidence...</p></div>';
+
+    try {
+        const { evidence } = await fetchEvidence();
+
+        if (!evidence || evidence.length === 0) {
+            container.innerHTML = '<div class="empty-state"><p>📋 No evidence submitted yet</p></div>';
+            return;
+        }
+
+        container.innerHTML = evidence.map((item) => {
+            const title = escapeHtml(item.title || 'Untitled');
+            const description = escapeHtml(truncateText(item.description || '', 150));
+            const nameLabel = escapeHtml(item.name || 'Anonymous');
+            const dateDisplay = escapeHtml(formatDate(item.updatedAt || item.createdAt) || '');
+            const statusClass = `status-${(item.status || 'submitted').replace(/[^a-z0-9_-]/gi, '')}`;
+
+            return `
+                <div class="evidence-card">
+                    <h3>${title}</h3>
+                    <p>${description}</p>
+                    <div class="evidence-meta">
+                        <span><strong>Submitted by:</strong> ${nameLabel}</span>
+                        <span><strong>Date:</strong> ${dateDisplay}</span>
+                        <span class="${statusClass}">${escapeHtml(item.status || 'submitted')}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Failed to fetch evidence:', error);
+        container.innerHTML = '<div class="empty-state"><p>Unable to load evidence submissions.</p></div>';
+    }
 }
 
 function showNotification(message) {
@@ -64,17 +104,17 @@ function showNotification(message) {
         position: fixed;
         top: 20px;
         right: 20px;
-        background: #7B6B43;
-        color: #F7E4BC;
+        background: #6F5B3C;
+        color: #F2E4D0;
         padding: 15px 25px;
         border-radius: 6px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         z-index: 2000;
         animation: slideIn 0.3s ease;
     `;
-    
+
     document.body.appendChild(notification);
-    
+
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);

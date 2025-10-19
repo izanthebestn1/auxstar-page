@@ -1,28 +1,28 @@
 /* ============================================
-   Auxstar Media - Earthy Heritage Theme
-   Palette reference: 352208, E1BB80, 7B6B43, 685634, 806443
+   Auxstar Media - Soft Umber Theme
+   Palette reference: 3E2A1B, D8CBB2, 6F5B3C, 5B4A33, 8E7754
    ============================================ */
 
 :root {
-    --primary: #7B6B43;
-    --primary-dark: #352208;
-    --primary-light: #806443;
+    --primary: #6F5B3C;
+    --primary-dark: #3E2A1B;
+    --primary-light: #8E7754;
 
-    --bg-main: #E1BB80;
-    --bg-secondary: #F2D9A5;
-    --bg-card: #F7E4BC;
-    --bg-contrast: #685634;
+    --bg-main: #D8CBB2;
+    --bg-secondary: #E6D8C0;
+    --bg-card: #F2E7D3;
+    --bg-contrast: #5B4A33;
 
-    --text-primary: #352208;
-    --text-secondary: #685634;
-    --text-tertiary: #806443;
+    --text-primary: #332618;
+    --text-secondary: #5A4A36;
+    --text-tertiary: #8C7A5E;
 
-    --border: #D4BA84;
-    --border-light: #C3A86F;
+    --border: #CBB896;
+    --border-light: #BCA883;
 
     --success: #4F7D5B;
     --warning: #B88530;
-    --danger: #8C3F2F;
+    --danger: #814235;
     --info: #4E6376;
 }
 
@@ -640,7 +640,7 @@ section h1 {
 
 .footer {
     background: var(--bg-contrast);
-    color: #F8E6BD;
+    color: #F2E7D3;
     text-align: center;
     padding: 30px 20px;
     margin-top: 60px;
@@ -660,7 +660,7 @@ section h1 {
 }
 
 .footer-links a {
-    color: #F8E6BD;
+    color: #F2E7D3;
     font-size: 13px;
 }
 

@@ -1,0 +1,23 @@
+{
+  "name": "auxstar-page",
+  "version": "1.0.0",
+  "description": "Static news-style site deployed via Vercel. It now includes a lightweight `/api/login` serverless function that authenticates against credentials provided through environment variables.",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/izanthebestn1/auxstar-page.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/izanthebestn1/auxstar-page/issues"
+  },
+  "homepage": "https://github.com/izanthebestn1/auxstar-page#readme",
+  "dependencies": {
+    "pg": "^8.16.3"
+  }
+}
