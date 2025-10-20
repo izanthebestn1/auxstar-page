@@ -32,19 +32,19 @@
         <!-- Sidebar -->
         <aside class="admin-sidebar">
             <nav class="admin-nav">
-                <a href="#dashboard" class="nav-link active" data-section="dashboard">
+                <a href="#dashboard" class="nav-link active" data-section="dashboard" data-role="admin">
                     <span class="icon">📊</span> Dashboard
                 </a>
-                <a href="#articles" class="nav-link" data-section="articles">
+                <a href="#articles" class="nav-link" data-section="articles" data-role="admin">
                     <span class="icon">📝</span> Articles
                 </a>
                 <a href="#submit" class="nav-link" data-section="submit">
                     <span class="icon">✍️</span> Submit Article
                 </a>
-                <a href="#evidence" class="nav-link" data-section="evidence">
+                <a href="#evidence" class="nav-link" data-section="evidence" data-role="admin">
                     <span class="icon">📋</span> Evidence
                 </a>
-                <a href="#users" class="nav-link" data-section="users">
+                <a href="#users" class="nav-link" data-section="users" data-role="admin">
                     <span class="icon">👥</span> Users
                 </a>
             </nav>
@@ -53,7 +53,7 @@
         <!-- Main Admin Content -->
         <main class="admin-main">
             <!-- Dashboard -->
-            <section id="dashboard" class="admin-section active">
+            <section id="dashboard" class="admin-section active" data-role="admin">
                 <h1>Dashboard</h1>
                 <div class="dashboard-grid">
                     <div class="dashboard-card">
@@ -76,7 +76,7 @@
             </section>
 
             <!-- Articles Management -->
-            <section id="articles" class="admin-section">
+            <section id="articles" class="admin-section" data-role="admin">
                 <h1>Manage Articles</h1>
                 <div class="filter-controls">
                     <button class="filter-btn active" data-filter="all">All</button>
@@ -208,7 +208,7 @@
             </section>
 
             <!-- Evidence Management -->
-            <section id="evidence" class="admin-section">
+            <section id="evidence" class="admin-section" data-role="admin">
                 <h1>Evidence Submissions</h1>
                 <div id="evidenceList" class="evidence-container">
                     <div class="empty-state">
@@ -218,7 +218,7 @@
             </section>
 
             <!-- User Management -->
-            <section id="users" class="admin-section">
+            <section id="users" class="admin-section" data-role="admin">
                 <h1>Manage Contributors</h1>
                 <button class="btn-secondary" id="addUserBtn">Add New User</button>
                 <div id="usersList" class="admin-table-container">

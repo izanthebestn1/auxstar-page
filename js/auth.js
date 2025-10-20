@@ -88,12 +88,17 @@ function isAuthenticated() {
 
 function isAdmin() {
     const user = getCurrentUser();
-    return user && user.role === 'admin';
+    return Boolean(user && typeof user.role === 'string' && user.role.toLowerCase() === 'admin');
 }
 
 function isEditor() {
     const user = getCurrentUser();
-    return user && (user.role === 'editor' || user.role === 'admin');
+    if (!user || typeof user.role !== 'string') {
+        return false;
+    }
+
+    const role = user.role.toLowerCase();
+    return role === 'editor' || role === 'admin';
 }
 
 function updateUserDisplay() {
@@ -104,7 +109,8 @@ function updateUserDisplay() {
 
     if (user) {
         if (userDisplay) {
-            userDisplay.textContent = `Welcome, ${user.username}`;
+            const roleLabel = typeof user.role === 'string' ? user.role.toUpperCase() : '';
+            userDisplay.textContent = roleLabel ? `Welcome, ${user.username} (${roleLabel})` : `Welcome, ${user.username}`;
         }
         if (logoutBtn) {
             logoutBtn.style.display = 'block';

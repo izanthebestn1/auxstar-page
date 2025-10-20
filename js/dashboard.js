@@ -1,6 +1,10 @@
 // Dashboard Script
 
 let articlesFilter = 'all';
+let currentRoleState = {
+    isAdmin: false,
+    isEditor: false
+};
 
 const MAX_MEDIA_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 const articleFormState = {
@@ -24,12 +28,18 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function initializeDashboard() {
-    if (!isAdmin()) {
+    currentRoleState = {
+        isAdmin: isAdmin(),
+        isEditor: isEditor()
+    };
+
+    if (!currentRoleState.isAdmin && !currentRoleState.isEditor) {
         await logoutUser({ redirect: true });
         return;
     }
 
     updateAdminDisplay();
+    applyRoleVisibility();
     setupNavigation();
     setupArticlesFilter();
     setupArticleFormControls();
@@ -48,7 +58,11 @@ async function initializeDashboard() {
         articleForm.addEventListener('submit', handleArticleSubmit);
     }
 
-    await loadDashboardData();
+    if (currentRoleState.isAdmin) {
+        await showSection('dashboard');
+    } else {
+        await showSection('submit');
+    }
 }
 
 function updateAdminDisplay() {
@@ -60,8 +74,39 @@ function updateAdminDisplay() {
     }
 }
 
+function applyRoleVisibility() {
+    const { isAdmin } = currentRoleState;
+
+    document.querySelectorAll('.nav-link[data-role]').forEach((link) => {
+        const requiresAdmin = link.dataset.role === 'admin';
+        if (requiresAdmin && !isAdmin) {
+            link.style.display = 'none';
+            link.classList.remove('active');
+            link.setAttribute('aria-hidden', 'true');
+        } else {
+            link.style.display = '';
+            link.removeAttribute('aria-hidden');
+        }
+    });
+
+    document.querySelectorAll('.admin-section[data-role]').forEach((section) => {
+        const requiresAdmin = section.dataset.role === 'admin';
+        if (requiresAdmin && !isAdmin) {
+            section.classList.remove('active');
+            section.setAttribute('hidden', 'true');
+        } else {
+            section.removeAttribute('hidden');
+        }
+    });
+}
+
 function setupNavigation() {
     document.querySelectorAll('.nav-link').forEach((link) => {
+        const requiredRole = link.dataset.role;
+        if (requiredRole === 'admin' && !currentRoleState.isAdmin) {
+            return;
+        }
+
         link.addEventListener('click', async (event) => {
             event.preventDefault();
 
@@ -70,31 +115,49 @@ function setupNavigation() {
                 return;
             }
 
-            document.querySelectorAll('.nav-link').forEach((item) => item.classList.remove('active'));
-            link.classList.add('active');
-
-            document.querySelectorAll('.admin-section').forEach((panel) => panel.classList.remove('active'));
-            const target = document.getElementById(section);
-            if (target) {
-                target.classList.add('active');
-            }
-
-            try {
-                if (section === 'articles') {
-                    await loadArticlesManagement();
-                } else if (section === 'evidence') {
-                    await loadEvidenceManagement();
-                } else if (section === 'users') {
-                    await loadUsersManagement();
-                } else if (section === 'dashboard') {
-                    await loadDashboardData();
-                }
-            } catch (error) {
-                console.error(`Failed to load ${section} section:`, error);
-                showNotification('Unable to load the requested section.');
-            }
+            await showSection(section, { link });
         });
     });
+}
+
+async function showSection(section, { link } = {}) {
+    const target = document.getElementById(section);
+    if (!target) {
+        return;
+    }
+
+    const requiresAdmin = target.dataset.role === 'admin';
+    if (requiresAdmin && !currentRoleState.isAdmin) {
+        return;
+    }
+
+    document.querySelectorAll('.nav-link').forEach((item) => item.classList.remove('active'));
+    const resolvedLink = link || document.querySelector(`.nav-link[data-section="${section}"]`);
+    if (resolvedLink) {
+        resolvedLink.classList.add('active');
+    }
+
+    document.querySelectorAll('.admin-section').forEach((panel) => panel.classList.remove('active'));
+    target.classList.add('active');
+
+    if (!currentRoleState.isAdmin) {
+        return;
+    }
+
+    try {
+        if (section === 'articles') {
+            await loadArticlesManagement();
+        } else if (section === 'evidence') {
+            await loadEvidenceManagement();
+        } else if (section === 'users') {
+            await loadUsersManagement();
+        } else if (section === 'dashboard') {
+            await loadDashboardData();
+        }
+    } catch (error) {
+        console.error(`Failed to load ${section} section:`, error);
+        showNotification('Unable to load the requested section.');
+    }
 }
 
 function setupArticlesFilter() {
