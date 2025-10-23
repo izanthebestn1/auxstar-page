@@ -1,10 +1,18 @@
 // Evidence Page Script
 
+let captchaWidgetId = null;
+let captchaEnabled = false;
+let captchaScriptPromise = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('evidenceForm');
     if (form) {
         form.addEventListener('submit', handleEvidenceSubmit);
     }
+
+    initializeEvidenceCaptcha().catch((error) => {
+        console.error('Captcha setup failed:', error);
+    });
 
     loadEvidence().catch((error) => {
         console.error('Failed to load evidence:', error);
@@ -31,19 +39,34 @@ async function handleEvidenceSubmit(event) {
         return;
     }
 
+    if (!captchaEnabled) {
+        showNotification('Evidence submissions are temporarily disabled. Please try again later.');
+        return;
+    }
+
     submitButton.disabled = true;
 
     try {
+        let captchaToken = null;
+        if (captchaEnabled) {
+            captchaToken = await getCaptchaToken();
+        }
+
         await submitEvidence({
             title,
             description,
             name: nameValue || null,
-            email: emailValue || null
+            email: emailValue || null,
+            captchaToken: captchaToken || undefined
         });
 
         form.reset();
         if (preview) {
             preview.innerHTML = '';
+        }
+
+        if (captchaEnabled && typeof window.grecaptcha !== 'undefined' && captchaWidgetId !== null) {
+            window.grecaptcha.reset(captchaWidgetId);
         }
 
         showNotification('Evidence submitted successfully!');
@@ -119,4 +142,86 @@ function showNotification(message) {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
     }, 3000);
+}
+
+async function initializeEvidenceCaptcha() {
+    const container = document.getElementById('captchaContainer');
+    if (!container) {
+        return;
+    }
+
+    try {
+        const config = await fetchPublicConfig();
+        const siteKey = config && typeof config.evidenceCaptchaSiteKey === 'string'
+            ? config.evidenceCaptchaSiteKey.trim()
+            : '';
+
+        if (!siteKey) {
+            container.innerHTML = '<p class="captcha-disabled">Captcha is not configured.</p>';
+            return;
+        }
+
+        await loadRecaptchaScript();
+
+        if (typeof window.grecaptcha === 'undefined') {
+            throw new Error('reCAPTCHA script did not load.');
+        }
+
+        await new Promise((resolve) => window.grecaptcha.ready(resolve));
+
+        captchaWidgetId = window.grecaptcha.render(container, {
+            sitekey: siteKey
+        });
+
+        captchaEnabled = true;
+    } catch (error) {
+        container.innerHTML = '<p class="captcha-disabled">Captcha unavailable. Please try again later.</p>';
+        throw error;
+    }
+}
+
+function loadRecaptchaScript() {
+    if (typeof window !== 'undefined' && typeof window.grecaptcha !== 'undefined') {
+        return Promise.resolve();
+    }
+
+    if (captchaScriptPromise) {
+        return captchaScriptPromise;
+    }
+
+    captchaScriptPromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[src*="https://www.google.com/recaptcha/api.js"]');
+        if (existing) {
+            existing.addEventListener('load', () => resolve());
+            existing.addEventListener('error', () => reject(new Error('Failed to load reCAPTCHA script.')));
+            return;
+        }
+
+        const script = document.createElement('script');
+        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error('Failed to load reCAPTCHA script.'));
+        document.head.appendChild(script);
+    });
+
+    return captchaScriptPromise;
+}
+
+async function getCaptchaToken() {
+    if (!captchaEnabled) {
+        return null;
+    }
+
+    if (typeof window.grecaptcha === 'undefined' || captchaWidgetId === null) {
+        throw new Error('Captcha is not ready yet.');
+    }
+
+    const token = window.grecaptcha.getResponse(captchaWidgetId);
+    if (!token) {
+        throw new Error('Please complete the captcha challenge.');
+    }
+
+    return token;
 }

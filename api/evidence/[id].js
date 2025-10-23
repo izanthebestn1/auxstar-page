@@ -1,8 +1,8 @@
 import { ensureSchema, query } from '../_db.js';
 import { requireAdmin } from '../_auth.js';
 
-function mapEvidence(row) {
-    return {
+function mapEvidence(row, { includeSensitive = false } = {}) {
+    const base = {
         id: row.id,
         title: row.title,
         description: row.description,
@@ -12,6 +12,12 @@ function mapEvidence(row) {
         createdAt: row.created_at,
         updatedAt: row.updated_at
     };
+
+    if (includeSensitive) {
+        base.ipAddress = row.ip_address || null;
+    }
+
+    return base;
 }
 
 export default async function handler(req, res) {
@@ -46,6 +52,7 @@ export default async function handler(req, res) {
     if (!session) {
         return;
     }
+    const includeSensitive = true;
 
     if (req.method === 'PATCH') {
         const { title, description, status, name, email } = req.body || {};
@@ -88,7 +95,7 @@ export default async function handler(req, res) {
                 `UPDATE evidence
                  SET ${fields.join(', ')}, updated_at = NOW()
                  WHERE id = $1
-                 RETURNING id, title, description, name, email, status, created_at, updated_at`,
+                 RETURNING id, title, description, name, email, status, created_at, updated_at, ip_address`,
                 [id, ...values]
             );
 
@@ -96,7 +103,7 @@ export default async function handler(req, res) {
                 return res.status(404).json({ message: 'Evidence not found.' });
             }
 
-            return res.status(200).json({ evidence: mapEvidence(rows[0]) });
+            return res.status(200).json({ evidence: mapEvidence(rows[0], { includeSensitive }) });
         } catch (error) {
             console.error('Failed to update evidence:', error);
             return res.status(500).json({ message: 'Failed to update evidence.' });

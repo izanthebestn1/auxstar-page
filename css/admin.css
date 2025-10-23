@@ -394,6 +394,69 @@
     border-color: var(--primary);
 }
 
+.section-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.banned-ip-panel {
+    margin-top: 30px;
+    background: rgba(247, 239, 223, 0.8);
+    border: 1px solid rgba(53, 34, 8, 0.12);
+    border-radius: 8px;
+    padding: 18px;
+}
+
+.banned-ip-panel h2 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: var(--text-secondary);
+    font-size: 20px;
+}
+
+.banned-ip-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.banned-ip-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    background: #fff;
+    border: 1px solid rgba(53, 34, 8, 0.12);
+    border-radius: 6px;
+    padding: 12px 16px;
+}
+
+.banned-ip-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.banned-ip-address {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.captcha-container {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+}
+
+.captcha-disabled {
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+
 /* Login Page */
 .login-container {
     display: flex;

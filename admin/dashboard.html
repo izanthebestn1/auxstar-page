@@ -210,9 +210,20 @@
             <!-- Evidence Management -->
             <section id="evidence" class="admin-section" data-role="admin">
                 <h1>Evidence Submissions</h1>
+                <div class="section-actions">
+                    <button type="button" class="btn-secondary" id="cleanupDuplicatesBtn">Remove Duplicate Submissions</button>
+                </div>
                 <div id="evidenceList" class="evidence-container">
                     <div class="empty-state">
                         <p>📋 No evidence submitted</p>
+                    </div>
+                </div>
+                <div class="banned-ip-panel">
+                    <h2>Banned IP Addresses</h2>
+                    <div id="bannedIpList" class="banned-ip-list">
+                        <div class="empty-state">
+                            <p>No banned IP addresses</p>
+                        </div>
                     </div>
                 </div>
             </section>

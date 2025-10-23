@@ -319,6 +319,17 @@ section h1 {
     margin-top: 5px;
 }
 
+.captcha-container {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+}
+
+.captcha-disabled {
+    color: var(--text-tertiary);
+    font-size: 13px;
+}
+
 /* ============================================
    BUTTONS
    ============================================ */

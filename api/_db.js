@@ -72,6 +72,7 @@ export async function ensureSchema() {
                     description TEXT NOT NULL,
                     name TEXT,
                     email TEXT,
+                    ip_address TEXT,
                     status TEXT NOT NULL DEFAULT 'submitted',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
                     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -86,6 +87,23 @@ export async function ensureSchema() {
             await pool.query(`
                 ALTER TABLE evidence
                 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+            `);
+
+            await pool.query(`
+                ALTER TABLE evidence
+                ADD COLUMN IF NOT EXISTS ip_address TEXT;
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS evidence_ip_idx ON evidence (ip_address);
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS evidence_ip_bans (
+                    ip_address TEXT PRIMARY KEY,
+                    reason TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
             `);
 
             await pool.query(`

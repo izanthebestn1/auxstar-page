@@ -20,6 +20,8 @@ Auxstar is a static-first news site that relies on Vercel serverless functions b
 2. Create a `.env.local` (or `.env`) file that includes:
    - `DATABASE_URL` – connection string for your Postgres instance (Neon works well).
    - `AUTH_USERS_JSON` – JSON array of seed users, e.g. `[{"username":"admin","password":"secret","role":"admin"}]`.
+   - `EVIDENCE_CAPTCHA_SECRET` – server-side secret for your Google reCAPTCHA site.
+   - `EVIDENCE_CAPTCHA_SITE_KEY` – public site key exposed to the evidence form for captcha rendering.
 3. Start the local environment with `vercel dev` (or deploy to Vercel for production parity).
 4. Open the reported URL and log in through `admin/login.html`.
 
@@ -31,6 +33,7 @@ Auxstar is a static-first news site that relies on Vercel serverless functions b
 ## Security Checklist
 - Replace plain-text passwords in `AUTH_USERS_JSON` with hashed values (bcrypt/argon2) and adjust `_auth.js` accordingly.
 - Use role-based access in the admin dashboard; only admin accounts can call privileged APIs.
+- Configure captcha keys and evidence IP bans to throttle spam submissions (1-minute per-IP rate limit enforced server-side).
 - Keep `.env*` files and database credentials out of version control.
 
 ## Contributing

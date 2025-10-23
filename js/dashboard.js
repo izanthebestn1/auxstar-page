@@ -5,6 +5,7 @@ let currentRoleState = {
     isAdmin: false,
     isEditor: false
 };
+let bannedIpSet = new Set();
 
 const MAX_MEDIA_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 const articleFormState = {
@@ -43,6 +44,7 @@ async function initializeDashboard() {
     setupNavigation();
     setupArticlesFilter();
     setupArticleFormControls();
+    setupEvidenceControls();
     disableUserCreation();
 
     const logoutButton = document.getElementById('adminLogout');
@@ -98,6 +100,14 @@ function applyRoleVisibility() {
             section.removeAttribute('hidden');
         }
     });
+}
+
+function normalizeIpValue(ip) {
+    if (typeof ip !== 'string') {
+        return '';
+    }
+
+    return ip.trim().toLowerCase();
 }
 
 function setupNavigation() {
@@ -186,6 +196,19 @@ function setupArticlesFilter() {
             }
         });
     });
+}
+
+function setupEvidenceControls() {
+    const cleanupBtn = document.getElementById('cleanupDuplicatesBtn');
+    if (cleanupBtn && cleanupBtn.dataset.bound !== 'true') {
+        cleanupBtn.addEventListener('click', handleCleanupDuplicates);
+        cleanupBtn.dataset.bound = 'true';
+    }
+
+    const bannedList = document.getElementById('bannedIpList');
+    if (bannedList) {
+        bindBannedIpActions(bannedList);
+    }
 }
 
 function disableUserCreation() {
@@ -1055,19 +1078,32 @@ function generateTempId() {
 
 async function loadEvidenceManagement() {
     const container = document.getElementById('evidenceList');
+    const bannedContainer = document.getElementById('bannedIpList');
     if (!container) {
         return;
     }
 
     container.innerHTML = '<div class="empty-state"><p>Loading evidence...</p></div>';
+    if (bannedContainer) {
+        bannedContainer.innerHTML = '<div class="empty-state"><p>Loading banned IPs...</p></div>';
+    }
 
     try {
-        const { evidence } = await fetchEvidence({ scope: 'admin' });
-        renderEvidenceList(evidence || []);
+        const [evidenceResponse, banResponse] = await Promise.all([
+            fetchEvidence({ scope: 'admin' }),
+            fetchEvidenceBans()
+        ]);
+
+        renderBannedIpList((banResponse && banResponse.bans) || []);
+        renderEvidenceList((evidenceResponse && evidenceResponse.evidence) || []);
     } catch (error) {
         console.error('Failed to load evidence:', error);
         container.innerHTML = '<div class="empty-state"><p>Unable to load evidence submissions</p></div>';
         showNotification(error.message || 'Failed to load evidence.');
+        if (bannedContainer) {
+            bannedContainer.innerHTML = '<div class="empty-state"><p>Unable to load banned IPs</p></div>';
+        }
+        bannedIpSet = new Set();
     }
 }
 
@@ -1089,6 +1125,11 @@ function renderEvidenceList(items) {
         const description = truncateText(item.description || '', 160);
         const dateDisplay = formatDate(item.updatedAt || item.createdAt) || '';
         const statusClass = `status-${(item.status || 'submitted').replace(/[^a-z0-9_-]/gi, '')}`;
+        const ipAddress = item.ipAddress ? escapeHtml(item.ipAddress) : 'Unknown';
+        const ipKey = normalizeIpValue(item.ipAddress);
+        const isBanned = ipKey ? bannedIpSet.has(ipKey) : false;
+        const ipLabel = isBanned ? `${ipAddress} (banned)` : ipAddress;
+        const banDisabled = !item.ipAddress || isBanned ? ' disabled' : '';
 
         return `
             <div class="evidence-card admin-evidence" data-evidence-id="${escapeHtml(item.id)}">
@@ -1097,17 +1138,91 @@ function renderEvidenceList(items) {
                 <div class="evidence-meta">
                     <span><strong>From:</strong> ${submittedBy}${emailLabel}</span>
                     <span><strong>Date:</strong> ${escapeHtml(dateDisplay)}</span>
+                    <span><strong>IP:</strong> ${ipLabel}</span>
                     <span class="${statusClass}">${escapeHtml(item.status || 'submitted')}</span>
                 </div>
                 <div class="evidence-actions">
                     <button class="btn-small btn-success" data-evidence-action="status" data-status="reviewed" data-evidence-id="${escapeHtml(item.id)}">Mark Reviewed</button>
                     <button class="btn-small btn-danger" data-evidence-action="delete" data-evidence-id="${escapeHtml(item.id)}">Delete</button>
+                    <button class="btn-small" data-evidence-action="ban-ip" data-ip="${escapeHtml(item.ipAddress || '')}"${banDisabled}>Ban IP</button>
                 </div>
             </div>
         `;
     }).join('');
 
     bindEvidenceActions(container);
+}
+
+function renderBannedIpList(bans) {
+    const container = document.getElementById('bannedIpList');
+    if (!container) {
+        return;
+    }
+
+    bannedIpSet = new Set();
+
+    if (!bans.length) {
+        container.innerHTML = '<div class="empty-state"><p>No banned IP addresses</p></div>';
+        return;
+    }
+
+    const items = bans.map((ban) => {
+        const ipAddress = ban.ipAddress || '';
+        if (ipAddress) {
+            bannedIpSet.add(normalizeIpValue(ipAddress));
+        }
+
+        const reason = ban.reason ? escapeHtml(ban.reason) : 'No reason provided';
+        const dateDisplay = formatDate(ban.createdAt) || '';
+
+        return `
+            <div class="banned-ip-item" data-ip="${escapeHtml(ipAddress)}">
+                <div class="banned-ip-meta">
+                    <span class="banned-ip-address"><strong>IP:</strong> ${escapeHtml(ipAddress)}</span>
+                    <span class="banned-ip-reason"><strong>Reason:</strong> ${reason}</span>
+                    <span class="banned-ip-date"><strong>Banned:</strong> ${escapeHtml(dateDisplay)}</span>
+                </div>
+                <button class="btn-small" data-ban-action="unban" data-ip="${escapeHtml(ipAddress)}">Unban</button>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = items;
+}
+
+function bindBannedIpActions(container) {
+    if (!container || container.dataset.bound === 'true') {
+        return;
+    }
+
+    container.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-ban-action]');
+        if (!button) {
+            return;
+        }
+
+        const action = button.getAttribute('data-ban-action');
+        const ip = button.getAttribute('data-ip');
+        if (!action || !ip) {
+            return;
+        }
+
+        if (action === 'unban') {
+            button.disabled = true;
+            try {
+                await unbanEvidenceIp(ip);
+                showNotification('IP address unbanned.');
+                await Promise.all([loadEvidenceManagement(), loadDashboardData()]);
+            } catch (error) {
+                console.error('Failed to unban IP:', error);
+                showNotification(error.message || 'Failed to unban IP address.');
+            } finally {
+                button.disabled = false;
+            }
+        }
+    });
+
+    container.dataset.bound = 'true';
 }
 
 function bindEvidenceActions(container) {
@@ -1140,6 +1255,25 @@ function bindEvidenceActions(container) {
                 const status = button.getAttribute('data-status') || 'reviewed';
                 await handleEvidenceAction(evidenceId, action, status);
                 showNotification('Evidence status updated.');
+            } else if (action === 'ban-ip') {
+                const ipAddress = button.getAttribute('data-ip');
+                if (!ipAddress) {
+                    showNotification('IP address is unavailable for this submission.');
+                    return;
+                }
+
+                const reason = window.prompt('Reason for banning this IP?', 'Spam evidence submissions');
+                if (reason === null) {
+                    return;
+                }
+
+                button.disabled = true;
+                try {
+                    await banEvidenceIp(ipAddress, reason.trim() || 'Spam evidence submissions');
+                    showNotification('IP address banned.');
+                } finally {
+                    button.disabled = false;
+                }
             }
 
             await Promise.all([loadEvidenceManagement(), loadDashboardData()]);
@@ -1150,6 +1284,32 @@ function bindEvidenceActions(container) {
     });
 
     container.dataset.bound = 'true';
+}
+
+async function handleCleanupDuplicates() {
+    const button = document.getElementById('cleanupDuplicatesBtn');
+    if (!button) {
+        return;
+    }
+
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Cleaning...';
+
+    try {
+        const removed = await cleanupDuplicateEvidence();
+        const message = removed > 0
+            ? `Removed ${removed} duplicate submission${removed === 1 ? '' : 's'}.`
+            : 'No duplicate submissions detected.';
+        showNotification(message);
+        await Promise.all([loadEvidenceManagement(), loadDashboardData()]);
+    } catch (error) {
+        console.error('Duplicate cleanup failed:', error);
+        showNotification(error.message || 'Failed to remove duplicate submissions.');
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
 }
 
 async function handleEvidenceAction(evidenceId, action, status) {
