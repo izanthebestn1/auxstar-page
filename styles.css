@@ -319,13 +319,18 @@ section h1 {
     margin-top: 5px;
 }
 
-.captcha-container {
+.verification-container {
     min-height: 78px;
     display: flex;
     align-items: center;
+    padding: 12px 16px;
+    border: 1px dashed var(--border);
+    border-radius: 6px;
+    background: #fff;
+    margin-bottom: 10px;
 }
 
-.captcha-disabled {
+.verification-message {
     color: var(--text-tertiary);
     font-size: 13px;
 }

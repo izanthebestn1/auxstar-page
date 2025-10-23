@@ -72,11 +72,12 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="captchaContainer">Security Check</label>
-                    <div id="captchaContainer" class="captcha-container">
-                        <p class="captcha-disabled">Loading captcha...</p>
+                    <label for="challengeAnswer">Security Check</label>
+                    <div id="challengeContainer" class="verification-container">
+                        <p id="challengeQuestion" class="verification-message">Preparing verification question...</p>
                     </div>
-                    <small>This site uses reCAPTCHA to prevent automated submissions.</small>
+                    <input type="text" id="challengeAnswer" name="challengeAnswer" placeholder="Enter the answer" autocomplete="off">
+                    <small>Answer the question above to prove you are human.</small>
                 </div>
 
                 <button type="submit" class="btn-submit">Submit Evidence</button>

@@ -185,7 +185,7 @@ async function unbanEvidenceIp(ipAddress) {
     });
 }
 
-async function fetchPublicConfig() {
+async function fetchEvidenceChallenge() {
     const response = await apiRequest('/api/config');
     return response || {};
 }

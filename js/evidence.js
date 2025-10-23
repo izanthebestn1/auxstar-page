@@ -1,8 +1,7 @@
 // Evidence Page Script
 
-let captchaWidgetId = null;
-let captchaEnabled = false;
-let captchaScriptPromise = null;
+let currentChallengeId = null;
+let challengeReady = false;
 
 document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('evidenceForm');
@@ -10,8 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
         form.addEventListener('submit', handleEvidenceSubmit);
     }
 
-    initializeEvidenceCaptcha().catch((error) => {
-        console.error('Captcha setup failed:', error);
+    loadEvidenceChallenge().catch((error) => {
+        console.error('Verification setup failed:', error);
     });
 
     loadEvidence().catch((error) => {
@@ -32,6 +31,7 @@ async function handleEvidenceSubmit(event) {
     const nameValue = document.getElementById('name').value.trim();
     const emailValue = document.getElementById('email').value.trim();
     const preview = document.getElementById('filePreview');
+    const answerInput = document.getElementById('challengeAnswer');
     const submitButton = form.querySelector('button[type="submit"]');
 
     if (!title || !description) {
@@ -39,25 +39,28 @@ async function handleEvidenceSubmit(event) {
         return;
     }
 
-    if (!captchaEnabled) {
-        showNotification('Evidence submissions are temporarily disabled. Please try again later.');
+    if (!challengeReady || !currentChallengeId) {
+        showNotification('Verification is unavailable right now. Please refresh the question and try again.');
+        await loadEvidenceChallenge();
+        return;
+    }
+
+    const challengeAnswer = answerInput ? answerInput.value.trim() : '';
+    if (!challengeAnswer) {
+        showNotification('Please answer the verification question.');
         return;
     }
 
     submitButton.disabled = true;
 
     try {
-        let captchaToken = null;
-        if (captchaEnabled) {
-            captchaToken = await getCaptchaToken();
-        }
-
         await submitEvidence({
             title,
             description,
             name: nameValue || null,
             email: emailValue || null,
-            captchaToken: captchaToken || undefined
+            challengeId: currentChallengeId,
+            challengeAnswer
         });
 
         form.reset();
@@ -65,15 +68,18 @@ async function handleEvidenceSubmit(event) {
             preview.innerHTML = '';
         }
 
-        if (captchaEnabled && typeof window.grecaptcha !== 'undefined' && captchaWidgetId !== null) {
-            window.grecaptcha.reset(captchaWidgetId);
+        if (answerInput) {
+            answerInput.value = '';
         }
+
+        await loadEvidenceChallenge();
 
         showNotification('Evidence submitted successfully!');
         await loadEvidence();
     } catch (error) {
         console.error('Evidence submission failed:', error);
         showNotification(error.message || 'Failed to submit evidence.');
+        await loadEvidenceChallenge();
     } finally {
         submitButton.disabled = false;
     }
@@ -144,84 +150,37 @@ function showNotification(message) {
     }, 3000);
 }
 
-async function initializeEvidenceCaptcha() {
-    const container = document.getElementById('captchaContainer');
-    if (!container) {
+async function loadEvidenceChallenge() {
+    const container = document.getElementById('challengeContainer');
+    const questionEl = document.getElementById('challengeQuestion');
+    const input = document.getElementById('challengeAnswer');
+
+    if (!container || !questionEl || !input) {
         return;
     }
 
+    challengeReady = false;
+    currentChallengeId = null;
+    questionEl.textContent = 'Preparing verification question...';
+    input.value = '';
+    input.disabled = true;
+
     try {
-        const config = await fetchPublicConfig();
-        const siteKey = config && typeof config.evidenceCaptchaSiteKey === 'string'
-            ? config.evidenceCaptchaSiteKey.trim()
-            : '';
+        const response = await fetchEvidenceChallenge();
+        const challenge = response && response.evidenceChallenge;
 
-        if (!siteKey) {
-            container.innerHTML = '<p class="captcha-disabled">Captcha is not configured.</p>';
-            return;
+        if (!challenge || !challenge.id || !challenge.question) {
+            throw new Error('Invalid challenge payload.');
         }
 
-        await loadRecaptchaScript();
-
-        if (typeof window.grecaptcha === 'undefined') {
-            throw new Error('reCAPTCHA script did not load.');
-        }
-
-        await new Promise((resolve) => window.grecaptcha.ready(resolve));
-
-        captchaWidgetId = window.grecaptcha.render(container, {
-            sitekey: siteKey
-        });
-
-        captchaEnabled = true;
+        currentChallengeId = challenge.id;
+        questionEl.textContent = challenge.question;
+        input.disabled = false;
+        challengeReady = true;
+        input.focus();
     } catch (error) {
-        container.innerHTML = '<p class="captcha-disabled">Captcha unavailable. Please try again later.</p>';
-        throw error;
+        console.error('Failed to load evidence challenge:', error);
+        questionEl.textContent = 'Unable to generate a verification question. Please try again later.';
+        challengeReady = false;
     }
-}
-
-function loadRecaptchaScript() {
-    if (typeof window !== 'undefined' && typeof window.grecaptcha !== 'undefined') {
-        return Promise.resolve();
-    }
-
-    if (captchaScriptPromise) {
-        return captchaScriptPromise;
-    }
-
-    captchaScriptPromise = new Promise((resolve, reject) => {
-        const existing = document.querySelector('script[src*="https://www.google.com/recaptcha/api.js"]');
-        if (existing) {
-            existing.addEventListener('load', () => resolve());
-            existing.addEventListener('error', () => reject(new Error('Failed to load reCAPTCHA script.')));
-            return;
-        }
-
-        const script = document.createElement('script');
-        script.src = 'https://www.google.com/recaptcha/api.js?render=explicit';
-        script.async = true;
-        script.defer = true;
-        script.onload = () => resolve();
-        script.onerror = () => reject(new Error('Failed to load reCAPTCHA script.'));
-        document.head.appendChild(script);
-    });
-
-    return captchaScriptPromise;
-}
-
-async function getCaptchaToken() {
-    if (!captchaEnabled) {
-        return null;
-    }
-
-    if (typeof window.grecaptcha === 'undefined' || captchaWidgetId === null) {
-        throw new Error('Captcha is not ready yet.');
-    }
-
-    const token = window.grecaptcha.getResponse(captchaWidgetId);
-    if (!token) {
-        throw new Error('Please complete the captcha challenge.');
-    }
-
-    return token;
 }

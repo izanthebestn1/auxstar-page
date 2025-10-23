@@ -107,6 +107,18 @@ export async function ensureSchema() {
             `);
 
             await pool.query(`
+                CREATE TABLE IF NOT EXISTS evidence_challenges (
+                    id UUID PRIMARY KEY,
+                    answer TEXT NOT NULL,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS evidence_challenges_created_idx ON evidence_challenges (created_at);
+            `);
+
+            await pool.query(`
                 ALTER TABLE articles
                 ADD COLUMN IF NOT EXISTS summary TEXT;
             `);
