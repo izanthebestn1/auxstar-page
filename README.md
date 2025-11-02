@@ -3,7 +3,7 @@
 Auxstar is a static-first news site that relies on Vercel serverless functions backed by a Postgres database. The public pages render with vanilla JavaScript while the admin dashboard performs CRUD operations through authenticated API calls.
 
 ## Project Structure
-- `index.html`, `articles.html`, `evidence.html`, `railroads.html` – public content surfaces.
+- `index.html`, `articles.html`, `evidence.html`, `railroads.html`, `contact.html` – public content surfaces.
 - `admin/` – protected admin entry points (`login.html`, `dashboard.html`).
 - `js/` – frontend behaviour (auth helpers, API client, page renderers, dashboard logic).
 - `css/` and `styles.css` – shared styling for public and admin sections.

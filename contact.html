@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auxstar Media - Articles</title>
+    <title>Auxstar Media - Contact</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Header Ribbon Red -->
     <header class="header-ribbon">
         <div class="header-content">
             <div class="logo-section">
@@ -21,10 +20,10 @@
             </div>
             <nav class="nav-menu">
                 <a href="index.html" class="nav-item">Home</a>
-                <a href="articles.html" class="nav-item active">Articles</a>
+                <a href="articles.html" class="nav-item">Articles</a>
                 <a href="railroads.html" class="nav-item">Railroads</a>
                 <a href="evidence.html" class="nav-item">Evidence</a>
-                <a href="contact.html" class="nav-item">Contact</a>
+                <a href="contact.html" class="nav-item active">Contact</a>
                 <a href="admin/login.html" class="nav-item" id="adminLink">Admin</a>
             </nav>
             <div class="user-section">
@@ -34,35 +33,39 @@
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="container">
-        <!-- Page Header -->
-        <section class="page-header">
-            <h1>All Articles</h1>
-            <p>Browse our collection of news, updates, and community content</p>
+        <section class="page-header contact-header">
+            <h1>Contact Auxstar Media</h1>
+            <p>Reach the right inbox for press, careers, or legal needs.</p>
         </section>
 
-        <!-- Filter Section -->
-        <section class="filter-section">
-            <div class="filter-controls">
-                <button class="filter-btn active" data-filter="all">All</button>
-                <button class="filter-btn" data-filter="news">News</button>
-                <button class="filter-btn" data-filter="update">Updates</button>
-                <button class="filter-btn" data-filter="evidence">Evidence</button>
+        <section class="contact-section">
+            <div class="contact-grid">
+                <article class="contact-card">
+                    <h3>Main Desk</h3>
+                    <p class="contact-description">General inquiries, partnerships, and press requests.</p>
+                    <a class="contact-email" href="mailto:office@auxstar.online">office@auxstar.online</a>
+                </article>
+
+                <article class="contact-card">
+                    <h3>Careers</h3>
+                    <p class="contact-description">Questions about open roles or application status.</p>
+                    <a class="contact-email" href="mailto:careers@auxstar.online">careers@auxstar.online</a>
+                </article>
+
+                <article class="contact-card">
+                    <h3>Legal</h3>
+                    <p class="contact-description">Compliance, takedown requests, or legal notices.</p>
+                    <a class="contact-email" href="mailto:legal@auxstar.online">legal@auxstar.online</a>
+                </article>
             </div>
-        </section>
 
-        <!-- Articles Grid -->
-        <section class="articles-section">
-            <div id="articlesList" class="articles-grid">
-                <div class="empty-state">
-                    <p>📝 No articles available</p>
-                </div>
+            <div class="contact-note">
+                <p>We aim to respond to every message within two business days. For urgent newsroom matters, contact the main desk and mark the subject as <strong>urgent</strong>.</p>
             </div>
         </section>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; 2025 Auxstar Media. All rights reserved.</p>
@@ -77,6 +80,5 @@
     <script src="js/auth.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
-    <script src="js/articles.js"></script>
 </body>
 </html>
