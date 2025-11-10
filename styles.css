@@ -535,8 +535,8 @@ section h1 {
 
 .page-header.rr-header,
 .page-header.contact-header {
-    border-left: 4px solid var(--primary);
     box-shadow: none;
+    border-left: none;
 }
 
 /* ============================================
