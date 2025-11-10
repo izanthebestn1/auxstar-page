@@ -1,25 +1,25 @@
 /* ============================================
-   AUXSTAR MEDIA - ADMIN SOFT UMBER THEME
-   Palette reference: 3E2A1B, D8CBB2, 6F5B3C, 5B4A33, 8E7754
+   AUXSTAR MEDIA - ADMIN BLUE THEME
+   Palette reference: 2C5F8D, E8EEF2, 1E4A6F, 4A7BA7
    ============================================ */
 
 :root {
-    --primary: #6F5B3C;
-    --primary-dark: #3E2A1B;
-    --primary-light: #8E7754;
+    --primary: #2C5F8D;
+    --primary-dark: #1E4A6F;
+    --primary-light: #4A7BA7;
 
-    --bg-main: #D8CBB2;
-    --bg-secondary: #E6D8C0;
-    --bg-card: #F2E4D0;
-    --bg-hover: #E0D2B7;
-    --bg-darker: #C0AA82;
+    --bg-main: #E8EEF2;
+    --bg-secondary: #D4E1EA;
+    --bg-card: #F5F8FA;
+    --bg-hover: #C8D8E4;
+    --bg-darker: #A8BCD0;
 
-    --text-primary: #332618;
-    --text-secondary: #5A4A36;
-    --text-tertiary: #8C7A5E;
+    --text-primary: #1A2332;
+    --text-secondary: #3A4A5C;
+    --text-tertiary: #6B7A8C;
 
-    --border: #CBB896;
-    --border-light: #BCA883;
+    --border: #B8C8D6;
+    --border-light: #C8D4E0;
 
     --success: #4F7D5B;
     --warning: #B88530;
@@ -40,8 +40,8 @@
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%);
     color: #F2E4D0;
     padding: 15px 20px;
-    box-shadow: 0 8px 32px rgba(53, 34, 8, 0.25);
-    border-bottom: 1px solid rgba(53, 34, 8, 0.35);
+    box-shadow: 0 8px 32px rgba(30, 74, 111, 0.25);
+    border-bottom: 1px solid rgba(30, 74, 111, 0.35);
 }
 
 .admin-header-content {
