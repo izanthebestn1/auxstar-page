@@ -14,8 +14,9 @@
             <div class="admin-logo-section">
                 <div class="logo-small">
                     <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="100" height="100" rx="15" fill="#2C5F8D"/>
-                        <text x="50" y="65" font-size="70" font-weight="bold" fill="white" text-anchor="middle" font-family="Arial">A</text>
+                        <rect width="100" height="100" rx="12" fill="#D05D56"/>
+                        <text x="35" y="72" font-size="65" font-weight="300" fill="white" font-family="Arial, sans-serif" style="letter-spacing: -2px;">p</text>
+                        <text x="66" y="82" font-size="13" font-weight="400" fill="white" font-family="Arial, sans-serif" style="letter-spacing: 0.5px;">media</text>
                     </svg>
                 </div>
                 <span>Auxstar Admin</span>
@@ -43,6 +44,12 @@
                 </a>
                 <a href="#evidence" class="nav-link" data-section="evidence" data-role="admin">
                     <span class="icon">📋</span> Evidence
+                </a>
+                <a href="#events" class="nav-link" data-section="events" data-role="admin">
+                    <span class="icon">📅</span> Events
+                </a>
+                <a href="#wanted" class="nav-link" data-section="wanted" data-role="admin">
+                    <span class="icon">🔍</span> Wanted List
                 </a>
                 <a href="#users" class="nav-link" data-section="users" data-role="admin">
                     <span class="icon">👥</span> Users
@@ -225,6 +232,52 @@
                             <p>No banned IP addresses</p>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Events Management -->
+            <section id="events" class="admin-section" data-role="admin">
+                <h1>Manage Events</h1>
+                <button class="btn-secondary" id="addEventBtn">Add New Event</button>
+                <div id="eventsList" class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Date & Time</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eventsTableBody">
+                            <tr><td colspan="5" class="empty">No events</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Wanted List Management -->
+            <section id="wanted" class="admin-section" data-role="admin">
+                <h1>Manage Wanted List</h1>
+                <button class="btn-secondary" id="addWantedBtn">Add New Entry</button>
+                <div id="wantedList" class="admin-table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Roblox User</th>
+                                <th>Avatar</th>
+                                <th>Charges</th>
+                                <th>Law</th>
+                                <th>Reward</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wantedTableBody">
+                            <tr><td colspan="7" class="empty">No wanted entries</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </section>
 

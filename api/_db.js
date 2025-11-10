@@ -26,7 +26,7 @@ export async function ensureSchema() {
                 CREATE TABLE IF NOT EXISTS users (
                     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     username TEXT NOT NULL,
-                    password TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
                     role TEXT NOT NULL DEFAULT 'editor',
                     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
                 );
@@ -178,6 +178,42 @@ export async function ensureSchema() {
 
             await pool.query(`
                 CREATE INDEX IF NOT EXISTS article_media_article_idx ON article_media (article_id);
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS events (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    title TEXT NOT NULL,
+                    description TEXT,
+                    event_date TIMESTAMPTZ NOT NULL,
+                    location TEXT,
+                    status TEXT NOT NULL DEFAULT 'upcoming',
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS events_date_idx ON events (event_date);
+            `);
+
+            await pool.query(`
+                CREATE TABLE IF NOT EXISTS wanted_list (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    roblox_username TEXT NOT NULL,
+                    avatar_url TEXT,
+                    charges TEXT NOT NULL,
+                    law_name TEXT,
+                    law_section TEXT,
+                    status TEXT NOT NULL DEFAULT 'wanted',
+                    reward_amount TEXT,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+            `);
+
+            await pool.query(`
+                CREATE INDEX IF NOT EXISTS wanted_list_status_idx ON wanted_list (status);
             `);
         })()
             .catch((error) => {

@@ -58,10 +58,10 @@ async function seedUsersFromEnv() {
     for (const user of envUsers) {
         await query(
             `
-            INSERT INTO users (username, password, role)
+            INSERT INTO users (username, password_hash, role)
             VALUES ($1, $2, $3)
             ON CONFLICT ((LOWER(username))) DO UPDATE
-            SET password = EXCLUDED.password,
+            SET password_hash = EXCLUDED.password_hash,
                 role = EXCLUDED.role;
         `,
             [user.username, user.password, user.role]
@@ -77,7 +77,7 @@ export async function findUser(username) {
     await seedUsersFromEnv();
 
     const { rows } = await query(
-        `SELECT username, password, role FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1`,
+        `SELECT username, password_hash, role FROM users WHERE LOWER(username) = LOWER($1) LIMIT 1`,
         [username]
     );
 

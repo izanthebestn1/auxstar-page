@@ -45,7 +45,7 @@ async function initializeDashboard() {
     setupArticlesFilter();
     setupArticleFormControls();
     setupEvidenceControls();
-    disableUserCreation();
+    setupUserCreation();
 
     const logoutButton = document.getElementById('adminLogout');
     if (logoutButton) {
@@ -159,6 +159,10 @@ async function showSection(section, { link } = {}) {
             await loadArticlesManagement();
         } else if (section === 'evidence') {
             await loadEvidenceManagement();
+        } else if (section === 'events') {
+            await loadEventsManagement();
+        } else if (section === 'wanted') {
+            await loadWantedManagement();
         } else if (section === 'users') {
             await loadUsersManagement();
         } else if (section === 'dashboard') {
@@ -211,10 +215,49 @@ function setupEvidenceControls() {
     }
 }
 
-function disableUserCreation() {
+function setupUserCreation() {
     const addUserBtn = document.getElementById('addUserBtn');
-    if (addUserBtn) {
-        addUserBtn.style.display = 'none';
+    if (addUserBtn && addUserBtn.dataset.bound !== 'true') {
+        addUserBtn.addEventListener('click', async () => {
+            const username = window.prompt('Enter username (min 3 characters):');
+            if (!username || username.trim().length < 3) {
+                if (username !== null) {
+                    showNotification('Username must be at least 3 characters.');
+                }
+                return;
+            }
+
+            const password = window.prompt('Enter password (min 6 characters):');
+            if (!password || password.trim().length < 6) {
+                if (password !== null) {
+                    showNotification('Password must be at least 6 characters.');
+                }
+                return;
+            }
+
+            const role = window.prompt('Enter role (admin or editor):', 'editor');
+            if (!role || !['admin', 'editor'].includes(role.trim().toLowerCase())) {
+                if (role !== null) {
+                    showNotification('Role must be either "admin" or "editor".');
+                }
+                return;
+            }
+
+            try {
+                await createUser({
+                    username: username.trim(),
+                    password: password.trim(),
+                    role: role.trim().toLowerCase()
+                });
+
+                showNotification('User created successfully.');
+                await loadUsersManagement();
+            } catch (error) {
+                console.error('Failed to create user:', error);
+                showNotification(error.message || 'Failed to create user.');
+            }
+        });
+        addUserBtn.dataset.bound = 'true';
     }
 }
 
@@ -1391,4 +1434,350 @@ function showNotification(message) {
         notification.style.animation = 'slideOut 0.3s ease';
         setTimeout(() => notification.remove(), 300);
     }, 3000);
+}
+
+// Events Management
+async function loadEventsManagement() {
+    const tbody = document.getElementById('eventsTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="5" class="empty">Loading events...</td></tr>';
+
+    try {
+        const { events } = await fetchEvents({ scope: 'admin' });
+        renderEventsTable(events || []);
+    } catch (error) {
+        console.error('Failed to load events:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">Unable to load events</td></tr>';
+        showNotification(error.message || 'Failed to load events.');
+    }
+}
+
+function renderEventsTable(events) {
+    const tbody = document.getElementById('eventsTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    if (!events.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="empty">No events found</td></tr>';
+        return;
+    }
+
+    const rows = events.map((event) => {
+        const statusClass = `status-${(event.status || 'upcoming').replace(/[^a-z0-9_-]/gi, '')}`;
+        const dateDisplay = event.eventDate ? formatDate(event.eventDate) : 'No date';
+        const location = event.location ? escapeHtml(event.location) : '—';
+
+        return `
+            <tr>
+                <td>${escapeHtml(event.title || '')}</td>
+                <td>${escapeHtml(dateDisplay)}</td>
+                <td>${location}</td>
+                <td><span class="${statusClass}">${escapeHtml(event.status || 'upcoming')}</span></td>
+                <td class="actions">
+                    <button class="btn-small" data-event-action="edit" data-event-id="${escapeHtml(event.id)}">Edit</button>
+                    <button class="btn-small btn-danger" data-event-action="delete" data-event-id="${escapeHtml(event.id)}">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = rows;
+    bindEventActions(tbody);
+}
+
+function bindEventActions(tbody) {
+    if (tbody.dataset.bound === 'true') {
+        return;
+    }
+
+    tbody.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-event-action]');
+        if (!button) {
+            return;
+        }
+
+        const eventId = button.getAttribute('data-event-id');
+        const action = button.getAttribute('data-event-action');
+        if (!eventId || !action) {
+            return;
+        }
+
+        try {
+            if (action === 'delete') {
+                const confirmed = window.confirm('Delete this event?');
+                if (!confirmed) {
+                    return;
+                }
+                await deleteEvent(eventId);
+                showNotification('Event deleted.');
+                await loadEventsManagement();
+            } else if (action === 'edit') {
+                await editEvent(eventId);
+            }
+        } catch (error) {
+            console.error('Event action failed:', error);
+            showNotification(error.message || 'Unable to update event.');
+        }
+    });
+
+    tbody.dataset.bound = 'true';
+}
+
+async function editEvent(eventId) {
+    try {
+        const { event } = await fetchEventById(eventId);
+        if (!event) {
+            showNotification('Event not found.');
+            return;
+        }
+
+        const title = window.prompt('Event Title:', event.title || '');
+        if (title === null) return;
+
+        const description = window.prompt('Description:', event.description || '');
+        if (description === null) return;
+
+        const eventDate = window.prompt('Event Date (YYYY-MM-DD HH:MM):', event.eventDate || '');
+        if (eventDate === null) return;
+
+        const location = window.prompt('Location:', event.location || '');
+        if (location === null) return;
+
+        const status = window.prompt('Status (upcoming/past/cancelled):', event.status || 'upcoming');
+        if (status === null) return;
+
+        await updateEvent(eventId, {
+            title: title.trim(),
+            description: description.trim(),
+            eventDate: eventDate.trim(),
+            location: location.trim(),
+            status: status.trim()
+        });
+
+        showNotification('Event updated.');
+        await loadEventsManagement();
+    } catch (error) {
+        console.error('Failed to edit event:', error);
+        showNotification(error.message || 'Failed to update event.');
+    }
+}
+
+// Setup add event button
+const addEventBtn = document.getElementById('addEventBtn');
+if (addEventBtn && addEventBtn.dataset.bound !== 'true') {
+    addEventBtn.addEventListener('click', async () => {
+        const title = window.prompt('Event Title:');
+        if (!title) return;
+
+        const description = window.prompt('Description:');
+        if (!description) return;
+
+        const eventDate = window.prompt('Event Date (YYYY-MM-DD HH:MM):');
+        if (!eventDate) return;
+
+        const location = window.prompt('Location (optional):');
+
+        try {
+            await createEvent({
+                title: title.trim(),
+                description: description.trim(),
+                eventDate: eventDate.trim(),
+                location: location?.trim() || null,
+                status: 'upcoming'
+            });
+
+            showNotification('Event created.');
+            await loadEventsManagement();
+        } catch (error) {
+            console.error('Failed to create event:', error);
+            showNotification(error.message || 'Failed to create event.');
+        }
+    });
+    addEventBtn.dataset.bound = 'true';
+}
+
+// Wanted List Management
+async function loadWantedManagement() {
+    const tbody = document.getElementById('wantedTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Loading wanted list...</td></tr>';
+
+    try {
+        const { wanted } = await fetchWantedList({ scope: 'admin' });
+        renderWantedTable(wanted || []);
+    } catch (error) {
+        console.error('Failed to load wanted list:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">Unable to load wanted list</td></tr>';
+        showNotification(error.message || 'Failed to load wanted list.');
+    }
+}
+
+function renderWantedTable(wanted) {
+    const tbody = document.getElementById('wantedTableBody');
+    if (!tbody) {
+        return;
+    }
+
+    if (!wanted.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="empty">No wanted entries found</td></tr>';
+        return;
+    }
+
+    const rows = wanted.map((entry) => {
+        const statusClass = `status-${(entry.status || 'wanted').replace(/[^a-z0-9_-]/gi, '')}`;
+        const avatarHtml = entry.avatarUrl 
+            ? `<img src="${escapeHtml(entry.avatarUrl)}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 4px;">`
+            : '—';
+        const law = entry.lawName ? `${escapeHtml(entry.lawName)}` : '—';
+        const lawSection = entry.lawSection ? ` §${escapeHtml(entry.lawSection)}` : '';
+        const reward = entry.rewardAmount ? escapeHtml(entry.rewardAmount) : '—';
+
+        return `
+            <tr>
+                <td>${escapeHtml(entry.robloxUsername || '')}</td>
+                <td>${avatarHtml}</td>
+                <td>${escapeHtml(entry.charges || '')}</td>
+                <td>${law}${lawSection}</td>
+                <td>${reward}</td>
+                <td><span class="${statusClass}">${escapeHtml(entry.status || 'wanted')}</span></td>
+                <td class="actions">
+                    <button class="btn-small" data-wanted-action="edit" data-wanted-id="${escapeHtml(entry.id)}">Edit</button>
+                    <button class="btn-small btn-danger" data-wanted-action="delete" data-wanted-id="${escapeHtml(entry.id)}">Delete</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    tbody.innerHTML = rows;
+    bindWantedActions(tbody);
+}
+
+function bindWantedActions(tbody) {
+    if (tbody.dataset.bound === 'true') {
+        return;
+    }
+
+    tbody.addEventListener('click', async (event) => {
+        const button = event.target.closest('button[data-wanted-action]');
+        if (!button) {
+            return;
+        }
+
+        const wantedId = button.getAttribute('data-wanted-id');
+        const action = button.getAttribute('data-wanted-action');
+        if (!wantedId || !action) {
+            return;
+        }
+
+        try {
+            if (action === 'delete') {
+                const confirmed = window.confirm('Delete this wanted entry?');
+                if (!confirmed) {
+                    return;
+                }
+                await deleteWantedEntry(wantedId);
+                showNotification('Wanted entry deleted.');
+                await loadWantedManagement();
+            } else if (action === 'edit') {
+                await editWantedEntry(wantedId);
+            }
+        } catch (error) {
+            console.error('Wanted action failed:', error);
+            showNotification(error.message || 'Unable to update wanted entry.');
+        }
+    });
+
+    tbody.dataset.bound = 'true';
+}
+
+async function editWantedEntry(wantedId) {
+    try {
+        const { wanted } = await fetchWantedById(wantedId);
+        if (!wanted) {
+            showNotification('Wanted entry not found.');
+            return;
+        }
+
+        const robloxUsername = window.prompt('Roblox Username:', wanted.robloxUsername || '');
+        if (robloxUsername === null) return;
+
+        const avatarUrl = window.prompt('Avatar URL:', wanted.avatarUrl || '');
+        if (avatarUrl === null) return;
+
+        const charges = window.prompt('Charges:', wanted.charges || '');
+        if (charges === null) return;
+
+        const lawName = window.prompt('Law Name:', wanted.lawName || '');
+        if (lawName === null) return;
+
+        const lawSection = window.prompt('Law Section:', wanted.lawSection || '');
+        if (lawSection === null) return;
+
+        const rewardAmount = window.prompt('Reward Amount:', wanted.rewardAmount || '');
+        if (rewardAmount === null) return;
+
+        const status = window.prompt('Status (wanted/captured/cleared):', wanted.status || 'wanted');
+        if (status === null) return;
+
+        await updateWantedEntry(wantedId, {
+            robloxUsername: robloxUsername.trim(),
+            avatarUrl: avatarUrl.trim(),
+            charges: charges.trim(),
+            lawName: lawName.trim(),
+            lawSection: lawSection.trim(),
+            rewardAmount: rewardAmount.trim(),
+            status: status.trim()
+        });
+
+        showNotification('Wanted entry updated.');
+        await loadWantedManagement();
+    } catch (error) {
+        console.error('Failed to edit wanted entry:', error);
+        showNotification(error.message || 'Failed to update wanted entry.');
+    }
+}
+
+// Setup add wanted button
+const addWantedBtn = document.getElementById('addWantedBtn');
+if (addWantedBtn && addWantedBtn.dataset.bound !== 'true') {
+    addWantedBtn.addEventListener('click', async () => {
+        const robloxUsername = window.prompt('Roblox Username:');
+        if (!robloxUsername) return;
+
+        const avatarUrl = window.prompt('Avatar URL:');
+        if (!avatarUrl) return;
+
+        const charges = window.prompt('Charges:');
+        if (!charges) return;
+
+        const lawName = window.prompt('Law Name:');
+        const lawSection = window.prompt('Law Section:');
+        const rewardAmount = window.prompt('Reward Amount:');
+
+        try {
+            await createWantedEntry({
+                robloxUsername: robloxUsername.trim(),
+                avatarUrl: avatarUrl.trim(),
+                charges: charges.trim(),
+                lawName: lawName?.trim() || null,
+                lawSection: lawSection?.trim() || null,
+                rewardAmount: rewardAmount?.trim() || null,
+                status: 'wanted'
+            });
+
+            showNotification('Wanted entry created.');
+            await loadWantedManagement();
+        } catch (error) {
+            console.error('Failed to create wanted entry:', error);
+            showNotification(error.message || 'Failed to create wanted entry.');
+        }
+    });
+    addWantedBtn.dataset.bound = 'true';
 }

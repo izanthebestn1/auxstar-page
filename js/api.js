@@ -218,6 +218,16 @@ async function fetchAdminUsers() {
     };
 }
 
+async function createUser(userData) {
+    const response = await apiRequest('/api/admin/users', {
+        method: 'POST',
+        body: userData,
+        auth: true
+    });
+
+    return response;
+}
+
 async function fetchArticleById(id) {
     if (!id) {
         throw new Error('Article id is required.');
@@ -246,5 +256,117 @@ async function fetchArticleBySlug(slug, { scope } = {}) {
 
     return {
         article: response.article || null
+    };
+}
+
+// Events API
+async function fetchEvents({ scope } = {}) {
+    const params = new URLSearchParams();
+
+    if (scope) {
+        params.set('scope', scope);
+    }
+
+    const url = params.size ? `/api/events?${params.toString()}` : '/api/events';
+    const response = await apiRequest(url, { auth: scope === 'admin' });
+
+    return {
+        events: Array.isArray(response.events) ? response.events : []
+    };
+}
+
+async function createEvent(event) {
+    const response = await apiRequest('/api/events', {
+        method: 'POST',
+        body: event,
+        auth: true
+    });
+
+    return response.event || null;
+}
+
+async function updateEvent(id, changes) {
+    const response = await apiRequest(`/api/events/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: changes,
+        auth: true
+    });
+
+    return response.event || null;
+}
+
+async function deleteEvent(id) {
+    await apiRequest(`/api/events/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        auth: true
+    });
+}
+
+async function fetchEventById(id) {
+    if (!id) {
+        throw new Error('Event id is required.');
+    }
+
+    const response = await apiRequest(`/api/events/${encodeURIComponent(id)}`, {
+        auth: true
+    });
+    return {
+        event: response.event || null
+    };
+}
+
+// Wanted List API
+async function fetchWantedList({ scope } = {}) {
+    const params = new URLSearchParams();
+
+    if (scope) {
+        params.set('scope', scope);
+    }
+
+    const url = params.size ? `/api/wanted?${params.toString()}` : '/api/wanted';
+    const response = await apiRequest(url, { auth: scope === 'admin' });
+
+    return {
+        wanted: Array.isArray(response.wanted) ? response.wanted : []
+    };
+}
+
+async function createWantedEntry(entry) {
+    const response = await apiRequest('/api/wanted', {
+        method: 'POST',
+        body: entry,
+        auth: true
+    });
+
+    return response.wanted || null;
+}
+
+async function updateWantedEntry(id, changes) {
+    const response = await apiRequest(`/api/wanted/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: changes,
+        auth: true
+    });
+
+    return response.wanted || null;
+}
+
+async function deleteWantedEntry(id) {
+    await apiRequest(`/api/wanted/${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+        auth: true
+    });
+}
+
+async function fetchWantedById(id) {
+    if (!id) {
+        throw new Error('Wanted id is required.');
+    }
+
+    const response = await apiRequest(`/api/wanted/${encodeURIComponent(id)}`, {
+        auth: true
+    });
+    return {
+        wanted: response.wanted || null
     };
 }

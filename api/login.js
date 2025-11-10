@@ -21,7 +21,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: 'Invalid username or password.' });
     }
 
-    if (!matchedUser || !safeCompare(matchedUser.password, password)) {
+    if (!matchedUser || !safeCompare(matchedUser.password_hash, password)) {
         return res.status(401).json({ message: 'Invalid username or password.' });
     }
 

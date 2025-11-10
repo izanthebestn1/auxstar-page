@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxstar Media - Most Wanted</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Ribbon Red -->
+    <header class="header-ribbon">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="12" fill="#D05D56"/>
+                        <text x="35" y="72" font-size="65" font-weight="300" fill="white" font-family="Arial, sans-serif" style="letter-spacing: -2px;">p</text>
+                        <text x="66" y="82" font-size="13" font-weight="400" fill="white" font-family="Arial, sans-serif" style="letter-spacing: 0.5px;">media</text>
+                    </svg>
+                </div>
+                <span class="brand-name">Auxstar Media</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="articles.html" class="nav-item">Articles</a>
+                <a href="railroads.html" class="nav-item">Railroads</a>
+                <a href="events.html" class="nav-item">Events</a>
+                <a href="wanted.html" class="nav-item active">Wanted</a>
+                <a href="evidence.html" class="nav-item">Evidence</a>
+                <a href="contact.html" class="nav-item">Contact</a>
+                <a href="admin/login.html" class="nav-item" id="adminLink">Admin</a>
+            </nav>
+            <div class="user-section">
+                <span id="userDisplay"></span>
+                <button id="logoutBtn" style="display: none;" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Page Header -->
+        <section class="page-header">
+            <h1>🔍 MOST WANTED</h1>
+            <p>Individuals wanted for violations of Auxstar laws</p>
+        </section>
+
+        <!-- Wanted Grid -->
+        <section class="wanted-section">
+            <div id="wantedContainer" class="wanted-grid">
+                <div class="empty-state">
+                    <p>Loading wanted list...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Auxstar Media. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateUserDisplay();
+            await loadWantedList();
+        });
+
+        async function loadWantedList() {
+            const container = document.getElementById('wantedContainer');
+            
+            try {
+                const { wanted } = await fetchWantedList();
+                
+                if (!wanted || wanted.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p>🔍 No active wanted individuals at this time.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = wanted.map(entry => renderWantedPoster(entry)).join('');
+            } catch (error) {
+                console.error('Failed to load wanted list:', error);
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Unable to load wanted list. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderWantedPoster(entry) {
+            const avatarUrl = entry.avatarUrl || 'https://via.placeholder.com/200x200?text=No+Photo';
+            const charges = entry.charges ? escapeHtml(entry.charges) : 'No charges specified';
+            const lawName = entry.lawName ? escapeHtml(entry.lawName) : null;
+            const lawSection = entry.lawSection ? escapeHtml(entry.lawSection) : null;
+            const reward = entry.rewardAmount ? escapeHtml(entry.rewardAmount) : 'Information Sought';
+
+            let lawHtml = '';
+            if (lawName && lawSection) {
+                lawHtml = `
+                    <div class="wanted-law">
+                        <span class="law-label">Violated Law:</span>
+                        <span class="law-text">${lawName} §${lawSection}</span>
+                    </div>
+                `;
+            } else if (lawName) {
+                lawHtml = `
+                    <div class="wanted-law">
+                        <span class="law-label">Violated Law:</span>
+                        <span class="law-text">${lawName}</span>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="wanted-poster">
+                    <div class="poster-header">
+                        <h2>WANTED</h2>
+                    </div>
+                    <div class="poster-photo">
+                        <img src="${escapeHtml(avatarUrl)}" alt="${escapeHtml(entry.robloxUsername)}" onerror="this.src='https://via.placeholder.com/200x200?text=No+Photo'">
+                    </div>
+                    <div class="poster-info">
+                        <h3 class="wanted-name">${escapeHtml(entry.robloxUsername)}</h3>
+                        <div class="wanted-charges">
+                            <span class="charges-label">Charges:</span>
+                            <p class="charges-text">${charges}</p>
+                        </div>
+                        ${lawHtml}
+                        <div class="wanted-reward">
+                            <span class="reward-label">Reward:</span>
+                            <span class="reward-amount">${reward}</span>
+                        </div>
+                    </div>
+                    <div class="poster-footer">
+                        <p class="caution-text">⚠️ CAUTION: Contact authorities with any information</p>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

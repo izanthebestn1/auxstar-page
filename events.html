@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auxstar Media - Events</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header Ribbon Red -->
+    <header class="header-ribbon">
+        <div class="header-content">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="100" height="100" rx="12" fill="#D05D56"/>
+                        <text x="35" y="72" font-size="65" font-weight="300" fill="white" font-family="Arial, sans-serif" style="letter-spacing: -2px;">p</text>
+                        <text x="66" y="82" font-size="13" font-weight="400" fill="white" font-family="Arial, sans-serif" style="letter-spacing: 0.5px;">media</text>
+                    </svg>
+                </div>
+                <span class="brand-name">Auxstar Media</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="index.html" class="nav-item">Home</a>
+                <a href="articles.html" class="nav-item">Articles</a>
+                <a href="railroads.html" class="nav-item">Railroads</a>
+                <a href="events.html" class="nav-item active">Events</a>
+                <a href="wanted.html" class="nav-item">Wanted</a>
+                <a href="evidence.html" class="nav-item">Evidence</a>
+                <a href="contact.html" class="nav-item">Contact</a>
+                <a href="admin/login.html" class="nav-item" id="adminLink">Admin</a>
+            </nav>
+            <div class="user-section">
+                <span id="userDisplay"></span>
+                <button id="logoutBtn" style="display: none;" class="btn-logout">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Page Header -->
+        <section class="page-header">
+            <h1>📅 Upcoming Events</h1>
+            <p>Join us for exciting community events and activities</p>
+        </section>
+
+        <!-- Events Grid -->
+        <section class="events-section">
+            <div id="eventsContainer" class="events-grid">
+                <div class="empty-state">
+                    <p>Loading events...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Auxstar Media. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="js/auth.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateUserDisplay();
+            await loadEvents();
+        });
+
+        async function loadEvents() {
+            const container = document.getElementById('eventsContainer');
+            
+            try {
+                const { events } = await fetchEvents();
+                
+                if (!events || events.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <p>📅 No upcoming events at this time.</p>
+                            <p>Check back soon for new community events!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = events.map(event => renderEventCard(event)).join('');
+                startEventCountdowns();
+            } catch (error) {
+                console.error('Failed to load events:', error);
+                container.innerHTML = `
+                    <div class="error-state">
+                        <p>Unable to load events. Please try again later.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderEventCard(event) {
+            const eventDate = new Date(event.eventDate);
+            const dateDisplay = formatDate(event.eventDate);
+            const timeDisplay = eventDate.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            const location = event.location ? escapeHtml(event.location) : 'Location TBA';
+            const description = event.description ? escapeHtml(event.description) : '';
+            
+            const now = new Date();
+            const isUpcoming = eventDate > now;
+            const statusClass = event.status === 'cancelled' ? 'event-cancelled' : 
+                                isUpcoming ? 'event-upcoming' : 'event-past';
+
+            const countdownHtml = isUpcoming && event.status !== 'cancelled' ? `
+                <div class="event-countdown" data-event-date="${event.eventDate}">
+                    <span class="countdown-label">Starts in:</span>
+                    <span class="countdown-time">Calculating...</span>
+                </div>
+            ` : '';
+
+            return `
+                <div class="event-card ${statusClass}">
+                    <div class="event-header">
+                        <h2>${escapeHtml(event.title)}</h2>
+                        ${event.status === 'cancelled' ? '<span class="event-badge cancelled">Cancelled</span>' : ''}
+                    </div>
+                    <div class="event-body">
+                        <p class="event-description">${description}</p>
+                        <div class="event-details">
+                            <div class="event-detail">
+                                <span class="detail-icon">📅</span>
+                                <span class="detail-text">${escapeHtml(dateDisplay)}</span>
+                            </div>
+                            <div class="event-detail">
+                                <span class="detail-icon">🕐</span>
+                                <span class="detail-text">${escapeHtml(timeDisplay)}</span>
+                            </div>
+                            <div class="event-detail">
+                                <span class="detail-icon">📍</span>
+                                <span class="detail-text">${location}</span>
+                            </div>
+                        </div>
+                        ${countdownHtml}
+                    </div>
+                </div>
+            `;
+        }
+
+        function startEventCountdowns() {
+            const countdowns = document.querySelectorAll('.event-countdown');
+            if (!countdowns.length) return;
+
+            function updateCountdowns() {
+                countdowns.forEach(element => {
+                    const targetDate = element.dataset.eventDate;
+                    if (!targetDate) return;
+
+                    const timeUntil = getTimeUntil(targetDate);
+                    const timeDisplay = element.querySelector('.countdown-time');
+                    
+                    if (!timeDisplay) return;
+
+                    if (timeUntil.distance < 0) {
+                        element.style.display = 'none';
+                        return;
+                    }
+
+                    timeDisplay.textContent = formatCountdown(timeUntil);
+                });
+            }
+
+            updateCountdowns();
+            setInterval(updateCountdowns, 1000);
+        }
+    </script>
+</body>
+</html>
