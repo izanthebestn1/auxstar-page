@@ -24,6 +24,9 @@
     --warning: #B88530;
     --danger: #814235;
     --info: #4E6376;
+
+    --header-bg: #2C5F8D;
+    --header-border: #1E4A6F;
 }
 
 /* ============================================
@@ -74,8 +77,8 @@ img {
    ============================================ */
 
 .header-ribbon {
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
+    background: var(--header-bg);
+    border-bottom: 1px solid var(--header-border);
 }
 
 .header-content {
@@ -113,7 +116,7 @@ img {
 .brand-name {
     font-size: 20px;
     font-weight: 600;
-    color: var(--text-primary);
+    color: #F2E4D0;
 }
 
 .nav-menu {
@@ -124,7 +127,7 @@ img {
 }
 
 .nav-item {
-    color: var(--text-secondary);
+    color: rgba(242, 228, 208, 0.85);
     font-weight: 500;
     font-size: 14px;
     padding-bottom: 4px;
@@ -134,20 +137,21 @@ img {
 
 .nav-item:hover,
 .nav-item.active {
-    color: var(--primary-dark);
-    border-color: var(--primary);
+    color: #F2E4D0;
+    border-color: #F2E4D0;
 }
 
 .user-section {
     display: flex;
     align-items: center;
     gap: 10px;
+    color: #F2E4D0;
 }
 
 .btn-logout {
     background: transparent;
-    color: var(--primary-dark);
-    border: 1px solid var(--primary-dark);
+    color: #F2E4D0;
+    border: 1px solid rgba(242, 228, 208, 0.5);
     border-radius: 4px;
     padding: 6px 14px;
     font-size: 13px;
@@ -155,7 +159,8 @@ img {
 }
 
 .btn-logout:hover {
-    background: var(--primary-dark);
+    background: rgba(242, 228, 208, 0.15);
+    border-color: #F2E4D0;
     color: #fff;
 }
 
