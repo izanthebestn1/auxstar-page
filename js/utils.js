@@ -40,3 +40,38 @@ function truncateText(value, length) {
 
     return `${normalized.slice(0, length).trim()}...`;
 }
+
+function getTimeUntil(targetDate) {
+    const now = new Date().getTime();
+    const target = new Date(targetDate).getTime();
+    const distance = target - now;
+
+    if (distance < 0) {
+        return null;
+    }
+
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    return { days, hours, minutes, seconds, distance };
+}
+
+function formatCountdown(timeUntil) {
+    if (!timeUntil) {
+        return 'Published';
+    }
+
+    const { days, hours, minutes, seconds } = timeUntil;
+
+    if (days > 0) {
+        return `${days}d ${hours}h ${minutes}m`;
+    } else if (hours > 0) {
+        return `${hours}h ${minutes}m ${seconds}s`;
+    } else if (minutes > 0) {
+        return `${minutes}m ${seconds}s`;
+    } else {
+        return `${seconds}s`;
+    }
+}

@@ -58,13 +58,17 @@ function renderFeaturedArticles(articles) {
             ? `article.html?slug=${encodeURIComponent(article.slug)}`
             : `article.html?id=${encodeURIComponent(article.id)}`;
 
+        // Check if article is scheduled
+        const scheduledMarkup = buildScheduledMarkup(article);
+
         return `
-            <a class="article-card" href="${url}">
+            <a class="article-card ${scheduledMarkup ? 'scheduled' : ''}" href="${url}">
                 ${imageMarkup}
                 <div class="article-content">
                     <span class="article-category">${categoryLabel}</span>
                     <h3 class="article-title">${title}</h3>
                     <p class="article-excerpt">${excerpt}</p>
+                    ${scheduledMarkup}
                     <div class="article-meta">
                         <strong>${dateDisplay}</strong>
                     </div>
@@ -72,6 +76,9 @@ function renderFeaturedArticles(articles) {
             </a>
         `;
     }).join('');
+
+    // Start countdown timers
+    startCountdownTimers();
 }
 
 function renderRecentArticles(articles) {
@@ -149,4 +156,59 @@ function getCategoryLabel(category) {
         railroads: '🚂 Railroads'
     };
     return labels[category] || category;
+}
+
+function buildScheduledMarkup(article) {
+    if (!article.publishedAt) {
+        return '';
+    }
+
+    const publishTime = new Date(article.publishedAt).getTime();
+    const now = new Date().getTime();
+
+    if (publishTime <= now) {
+        return '';
+    }
+
+    const timeUntil = getTimeUntil(article.publishedAt);
+    if (!timeUntil) {
+        return '';
+    }
+
+    return `<div class="article-countdown" data-target="${article.publishedAt}">
+        <span class="countdown-label">🕐 Publishes in:</span>
+        <span class="countdown-time">${formatCountdown(timeUntil)}</span>
+    </div>`;
+}
+
+function startCountdownTimers() {
+    const countdowns = document.querySelectorAll('.article-countdown');
+    if (!countdowns.length) {
+        return;
+    }
+
+    const interval = setInterval(() => {
+        let hasActive = false;
+
+        countdowns.forEach((countdown) => {
+            const target = countdown.dataset.target;
+            if (!target) {
+                return;
+            }
+
+            const timeUntil = getTimeUntil(target);
+            if (!timeUntil) {
+                countdown.querySelector('.countdown-time').textContent = 'Published!';
+                setTimeout(() => location.reload(), 2000);
+                return;
+            }
+
+            hasActive = true;
+            countdown.querySelector('.countdown-time').textContent = formatCountdown(timeUntil);
+        });
+
+        if (!hasActive) {
+            clearInterval(interval);
+        }
+    }, 1000);
 }
