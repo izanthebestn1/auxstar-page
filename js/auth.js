@@ -18,7 +18,7 @@ async function logoutUser({ redirect = false } = {}) {
 
     try {
         if (user && user.token) {
-            await fetch('/api/logout', {
+            await fetch('/api/auth/logout', {
                 method: 'POST',
                 headers: {
                     Authorization: `Bearer ${user.token}`
@@ -39,7 +39,7 @@ async function logoutUser({ redirect = false } = {}) {
 
 async function loginUser(username, password) {
     try {
-        const response = await fetch('/api/login', {
+        const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

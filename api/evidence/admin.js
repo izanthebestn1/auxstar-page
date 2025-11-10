@@ -30,14 +30,42 @@ function mapBan(row) {
     };
 }
 
-export default async function handler(req, res) {
-    await ensureSchema();
-
-    const session = await requireAdmin(req, res);
-    if (!session) {
-        return;
+async function handleCleanup(req, res) {
+    if (req.method !== 'POST') {
+        res.setHeader('Allow', ['POST']);
+        return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
+    try {
+        const { rows } = await query(
+            `WITH ranked AS (
+                SELECT id,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY LOWER(title), LOWER(description), COALESCE(LOWER(email), ''), COALESCE(ip_address, '')
+                           ORDER BY created_at DESC
+                       ) AS row_num
+                FROM evidence
+                WHERE status = 'submitted'
+            ),
+            deleted AS (
+                DELETE FROM evidence e
+                USING ranked r
+                WHERE e.id = r.id
+                  AND r.row_num > 1
+                RETURNING e.id
+            )
+            SELECT COUNT(*) AS count FROM deleted;`
+        );
+
+        const removed = rows.length ? Number(rows[0].count || 0) : 0;
+        return res.status(200).json({ removed });
+    } catch (error) {
+        console.error('Failed to clean duplicate evidence:', error);
+        return res.status(500).json({ message: 'Failed to remove duplicate evidence.' });
+    }
+}
+
+async function handleIpBans(req, res) {
     if (req.method === 'GET') {
         try {
             const { rows } = await query(
@@ -103,4 +131,25 @@ export default async function handler(req, res) {
 
     res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
     return res.status(405).json({ message: 'Method Not Allowed' });
+}
+
+export default async function handler(req, res) {
+    await ensureSchema();
+
+    const session = await requireAdmin(req, res);
+    if (!session) {
+        return;
+    }
+
+    const path = req.url.split('?')[0];
+
+    if (path === '/api/evidence/admin/cleanup' || path === '/api/evidence/admin/cleanup/') {
+        return handleCleanup(req, res);
+    }
+
+    if (path === '/api/evidence/admin/ip-bans' || path === '/api/evidence/admin/ip-bans/' || path === '/api/evidence/admin/ip-bans') {
+        return handleIpBans(req, res);
+    }
+
+    return res.status(404).json({ message: 'Not Found' });
 }
