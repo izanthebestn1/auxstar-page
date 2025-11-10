@@ -1,6 +1,6 @@
 /* ============================================
-   AUXSTAR MEDIA - ADMIN BLUE THEME
-   Palette reference: 2C5F8D, E8EEF2, 1E4A6F, 4A7BA7
+   AUXSTAR MEDIA - ADMIN BLUE & WHITE THEME
+   Clean white background with blue accents
    ============================================ */
 
 :root {
@@ -8,23 +8,23 @@
     --primary-dark: #1E4A6F;
     --primary-light: #4A7BA7;
 
-    --bg-main: #E8EEF2;
-    --bg-secondary: #D4E1EA;
-    --bg-card: #F5F8FA;
-    --bg-hover: #C8D8E4;
-    --bg-darker: #A8BCD0;
+    --bg-main: #FFFFFF;
+    --bg-secondary: #F8F9FA;
+    --bg-card: #FFFFFF;
+    --bg-hover: #E9ECEF;
+    --bg-darker: #DEE2E6;
 
-    --text-primary: #1A2332;
-    --text-secondary: #3A4A5C;
-    --text-tertiary: #6B7A8C;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-tertiary: #6C757D;
 
-    --border: #B8C8D6;
-    --border-light: #C8D4E0;
+    --border: #DEE2E6;
+    --border-light: #E9ECEF;
 
-    --success: #4F7D5B;
-    --warning: #B88530;
-    --danger: #814235;
-    --info: #4E6376;
+    --success: #28A745;
+    --warning: #FFC107;
+    --danger: #DC3545;
+    --info: #17A2B8;
 }
 
 .admin-page {

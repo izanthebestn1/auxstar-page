@@ -8,22 +8,22 @@
     --primary-dark: #1E4A6F;
     --primary-light: #4A7BA7;
 
-    --bg-main: #E8EEF2;
-    --bg-secondary: #D4E1EA;
-    --bg-card: #F5F8FA;
+    --bg-main: #FFFFFF;
+    --bg-secondary: #F8F9FA;
+    --bg-card: #FFFFFF;
     --bg-contrast: #1E4A6F;
 
-    --text-primary: #1A2332;
-    --text-secondary: #3A4A5C;
-    --text-tertiary: #6B7A8C;
+    --text-primary: #212529;
+    --text-secondary: #495057;
+    --text-tertiary: #6C757D;
 
-    --border: #B8C8D6;
-    --border-light: #C8D4E0;
+    --border: #DEE2E6;
+    --border-light: #E9ECEF;
 
-    --success: #4F7D5B;
-    --warning: #B88530;
-    --danger: #814235;
-    --info: #4E6376;
+    --success: #28A745;
+    --warning: #FFC107;
+    --danger: #DC3545;
+    --info: #17A2B8;
 
     --header-bg: #2C5F8D;
     --header-border: #1E4A6F;
@@ -177,9 +177,10 @@ img {
 section {
     margin: 32px 0;
     padding: 36px;
-    background: var(--bg-secondary);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 section h2 {
@@ -386,14 +387,17 @@ section h1 {
     display: flex;
     flex-direction: column;
     min-height: 240px;
-    transition: border-color 0.2s ease;
+    transition: all 0.2s ease;
     text-decoration: none;
     color: inherit;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .article-card:hover,
 .railroads-card:hover {
     border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(44, 95, 141, 0.15);
+    transform: translateY(-2px);
 }
 
 .article-image,
