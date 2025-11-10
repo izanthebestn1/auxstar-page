@@ -513,11 +513,12 @@ section h1 {
 
 .page-header {
     text-align: center;
-    background: var(--bg-secondary);
+    background: var(--bg-card);
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 40px 24px;
     margin-bottom: 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .page-header h1 {
@@ -532,8 +533,10 @@ section h1 {
     margin: 0 auto;
 }
 
-.page-header.rr-header {
+.page-header.rr-header,
+.page-header.contact-header {
     border-left: 4px solid var(--primary);
+    box-shadow: none;
 }
 
 /* ============================================
