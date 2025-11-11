@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import { ensureSchema, query } from './_db.js';
 
 const SESSION_TTL_HOURS = 24;
@@ -56,6 +57,9 @@ async function seedUsersFromEnv() {
     await ensureSchema();
 
     for (const user of envUsers) {
+        // Hash the password before storing
+        const passwordHash = await bcrypt.hash(user.password, 10);
+        
         await query(
             `
             INSERT INTO users (username, password_hash, role)
@@ -64,7 +68,7 @@ async function seedUsersFromEnv() {
             SET password_hash = EXCLUDED.password_hash,
                 role = EXCLUDED.role;
         `,
-            [user.username, user.password, user.role]
+            [user.username, passwordHash, user.role]
         );
     }
 }
