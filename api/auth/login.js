@@ -1,5 +1,6 @@
+import bcrypt from 'bcryptjs';
 import { ensureSchema } from '../_db.js';
-import { createSession, findUser, safeCompare } from '../_auth.js';
+import { createSession, findUser } from '../_auth.js';
 
 export default async function handler(req, res) {
     if (req.method !== 'POST') {
@@ -21,7 +22,10 @@ export default async function handler(req, res) {
         return res.status(401).json({ message: 'Invalid username or password.' });
     }
 
-    if (!matchedUser || !safeCompare(matchedUser.password_hash, password)) {
+    // Verify password with bcrypt
+    const isValidPassword = await bcrypt.compare(password, matchedUser.password_hash);
+    
+    if (!isValidPassword) {
         return res.status(401).json({ message: 'Invalid username or password.' });
     }
 
