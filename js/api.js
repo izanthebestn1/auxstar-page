@@ -149,7 +149,7 @@ async function submitEvidence(evidence) {
 }
 
 async function cleanupDuplicateEvidence() {
-    const response = await apiRequest('/api/evidence/admin/cleanup', {
+    const response = await apiRequest('/api/evidence/cleanup', {
         method: 'POST',
         auth: true
     });
@@ -158,7 +158,7 @@ async function cleanupDuplicateEvidence() {
 }
 
 async function fetchEvidenceBans() {
-    const response = await apiRequest('/api/evidence/admin/ip-bans', {
+    const response = await apiRequest('/api/evidence/ip-bans', {
         auth: true
     });
 
@@ -168,7 +168,7 @@ async function fetchEvidenceBans() {
 }
 
 async function banEvidenceIp(ipAddress, reason) {
-    const response = await apiRequest('/api/evidence/admin/ip-bans', {
+    const response = await apiRequest('/api/evidence/ip-bans', {
         method: 'POST',
         body: { ipAddress, reason },
         auth: true
@@ -178,7 +178,7 @@ async function banEvidenceIp(ipAddress, reason) {
 }
 
 async function unbanEvidenceIp(ipAddress) {
-    await apiRequest('/api/evidence/admin/ip-bans', {
+    await apiRequest('/api/evidence/ip-bans', {
         method: 'DELETE',
         body: { ipAddress },
         auth: true
