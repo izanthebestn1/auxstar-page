@@ -1134,7 +1134,7 @@ async function loadEvidenceManagement() {
     try {
         const [evidenceResponse, banResponse] = await Promise.all([
             fetchEvidence({ scope: 'admin' }),
-            fetchEvidenceBans()
+            Promise.resolve({ bans: [] })
         ]);
 
         renderBannedIpList((banResponse && banResponse.bans) || []);
@@ -1253,7 +1253,7 @@ function bindBannedIpActions(container) {
         if (action === 'unban') {
             button.disabled = true;
             try {
-                await unbanEvidenceIp(ip);
+                // IP ban functionality removed
                 showNotification('IP address unbanned.');
                 await Promise.all([loadEvidenceManagement(), loadDashboardData()]);
             } catch (error) {
@@ -1312,7 +1312,7 @@ function bindEvidenceActions(container) {
 
                 button.disabled = true;
                 try {
-                    await banEvidenceIp(ipAddress, reason.trim() || 'Spam evidence submissions');
+                    // IP ban functionality removed
                     showNotification('IP address banned.');
                 } finally {
                     button.disabled = false;

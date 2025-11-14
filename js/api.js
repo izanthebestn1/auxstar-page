@@ -149,44 +149,16 @@ async function submitEvidence(evidence) {
 }
 
 async function cleanupDuplicateEvidence() {
-    const response = await apiRequest('/api/evidence/cleanup', {
-        method: 'POST',
+    const response = await apiRequest('/api/evidence', {
+        method: 'DELETE',
         auth: true
     });
 
     return typeof response.removed === 'number' ? response.removed : 0;
 }
 
-async function fetchEvidenceBans() {
-    const response = await apiRequest('/api/evidence/ip-bans', {
-        auth: true
-    });
-
-    return {
-        bans: Array.isArray(response.bans) ? response.bans : []
-    };
-}
-
-async function banEvidenceIp(ipAddress, reason) {
-    const response = await apiRequest('/api/evidence/ip-bans', {
-        method: 'POST',
-        body: { ipAddress, reason },
-        auth: true
-    });
-
-    return response.ban || null;
-}
-
-async function unbanEvidenceIp(ipAddress) {
-    await apiRequest('/api/evidence/ip-bans', {
-        method: 'DELETE',
-        body: { ipAddress },
-        auth: true
-    });
-}
-
 async function fetchEvidenceChallenge() {
-    const response = await apiRequest('/api/auth/config');
+    const response = await apiRequest('/api/evidence?scope=challenge');
     return response || {};
 }
 

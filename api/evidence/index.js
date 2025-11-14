@@ -2,6 +2,26 @@ import crypto from 'node:crypto';
 import { ensureSchema, query } from '../_db.js';
 import { requireAdmin } from '../_auth.js';
 
+function buildChallenge() {
+    const a = Math.floor(Math.random() * 8) + 2; // 2 - 9
+    const b = Math.floor(Math.random() * 8) + 2;
+    const useSubtraction = Math.random() < 0.4 && a !== b;
+
+    if (useSubtraction) {
+        const bigger = Math.max(a, b);
+        const smaller = Math.min(a, b);
+        return {
+            question: `How much is ${bigger} - ${smaller}?`,
+            answer: String(bigger - smaller)
+        };
+    }
+
+    return {
+        question: `How much is ${a} + ${b}?`,
+        answer: String(a + b)
+    };
+}
+
 function mapEvidence(row, { includeSensitive = false } = {}) {
     const base = {
         id: row.id,
@@ -104,19 +124,6 @@ async function validateChallenge(challengeId, answer) {
     }
 }
 
-async function isIpBanned(ipAddress) {
-    if (!ipAddress) {
-        return false;
-    }
-
-    const { rows } = await query(
-        `SELECT 1 FROM evidence_ip_bans WHERE ip_address = $1 LIMIT 1`,
-        [ipAddress]
-    );
-
-    return rows.length > 0;
-}
-
 async function hasRecentSubmission(ipAddress) {
     if (!ipAddress) {
         return false;
@@ -158,6 +165,30 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
         try {
             const scope = req.query.scope;
+
+            // Generate challenge for evidence submission
+            if (scope === 'challenge') {
+                await query(`
+                    DELETE FROM evidence_challenges
+                    WHERE created_at < NOW() - INTERVAL '2 hours'
+                `);
+
+                const id = crypto.randomUUID();
+                const challenge = buildChallenge();
+
+                await query(
+                    `INSERT INTO evidence_challenges (id, answer)
+                     VALUES ($1, $2)`,
+                    [id, challenge.answer]
+                );
+
+                return res.status(200).json({
+                    evidenceChallenge: {
+                        id,
+                        question: challenge.question
+                    }
+                });
+            }
 
             if (scope === 'admin') {
                 const session = await requireAdmin(req, res);
@@ -218,10 +249,6 @@ export default async function handler(req, res) {
         }
 
         try {
-            if (await isIpBanned(ipAddress)) {
-                return res.status(403).json({ message: 'Submissions from this IP address are blocked.' });
-            }
-
             if (await hasRecentSubmission(ipAddress)) {
                 return res.status(429).json({ message: 'Please wait at least one minute before submitting again.' });
             }
@@ -256,6 +283,41 @@ export default async function handler(req, res) {
         }
     }
 
-    res.setHeader('Allow', ['GET', 'POST']);
+    if (req.method === 'DELETE') {
+        const session = await requireAdmin(req, res);
+        if (!session) {
+            return;
+        }
+
+        try {
+            const { rows } = await query(
+                `WITH ranked AS (
+                    SELECT id,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY LOWER(title), LOWER(description), COALESCE(LOWER(email), ''), COALESCE(ip_address, '')
+                               ORDER BY created_at DESC
+                           ) AS row_num
+                    FROM evidence
+                    WHERE status = 'submitted'
+                ),
+                deleted AS (
+                    DELETE FROM evidence e
+                    USING ranked r
+                    WHERE e.id = r.id
+                      AND r.row_num > 1
+                    RETURNING e.id
+                )
+                SELECT COUNT(*) AS count FROM deleted;`
+            );
+
+            const removed = rows.length ? Number(rows[0].count || 0) : 0;
+            return res.status(200).json({ removed });
+        } catch (error) {
+            console.error('Failed to clean duplicate evidence:', error);
+            return res.status(500).json({ message: 'Failed to remove duplicate evidence.' });
+        }
+    }
+
+    res.setHeader('Allow', ['GET', 'POST', 'DELETE']);
     return res.status(405).json({ message: 'Method Not Allowed' });
 }
